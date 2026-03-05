@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; padding-bottom: 50px; }
+    .nav-bar { background-color: white; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .form-container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); max-width: 800px; margin: auto; }
+    .section-title { border-bottom: 2px solid #0d6efd; color: #0d6efd; padding-bottom: 8px; margin-bottom: 25px; margin-top: 35px; font-weight: bold; font-size: 1.2rem;}
+    #loadingSpinner { display: none; }
+    .form-label { font-weight: 500; color: #495057; }
+  </style>
+</head>
+<body>
+
+<!-- Tombol Kembali ke Dasbor (Sudah Diperbaiki URL-nya) -->
+<div class="nav-bar">
+  <div class="container max-w-800">
+    <a href="<?= getScriptUrl() ?>?page=menu" class="btn btn-outline-secondary btn-sm">
+      &larr; Kembali ke Menu Utama
+    </a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="form-container">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-dark">Formulir Pengajuan Cuti</h2>
+      <p class="text-muted">Form HRD-007</p>
+    </div>
+    
+    <form id="cutiForm" onsubmit="handleFormSubmit(event)">
+      
+      <div class="section-title">A. Data Karyawan</div>
+      <div class="row mb-3 g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nama Lengkap</label>
+          <input type="text" class="form-control" name="nama" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Jabatan</label>
+          <input type="text" class="form-control" name="jabatan" required>
+        </div>
+      </div>
+      
+      <div class="row mb-3 g-3">
+        <div class="col-md-6">
+          <label class="form-label">Divisi</label>
+          <input type="text" class="form-control" name="divisi" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Penempatan (Cabang/Lokasi)</label>
+          <input type="text" class="form-control" name="penempatan" required>
+        </div>
+      </div>
+
+      <div class="section-title">B. Detail Pengajuan Cuti</div>
+      <div class="mb-3">
+        <label class="form-label">Jenis Cuti</label>
+        <select class="form-select" name="jenis_cuti" required>
+          <option value="" selected disabled>-- Pilih Jenis Cuti --</option>
+          <option value="Cuti Tahunan">Cuti Tahunan</option>
+          <option value="Cuti Hamil/Melahirkan">Cuti Hamil/Melahirkan</option>
+          <option value="Cuti Menikah">Cuti Menikah</option>
+          <option value="Lain-lain">Lain - lain</option>
+        </select>
+      </div>
+
+      <div class="row mb-3 g-3">
+        <div class="col-md-4">
+          <label class="form-label">Tanggal Mulai Cuti</label>
+          <input type="date" class="form-control" name="tanggal_mulai" id="tglMulai" onchange="hitungLamaCuti()" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tanggal Selesai Cuti</label>
+          <input type="date" class="form-control" name="tanggal_selesai" id="tglSelesai" onchange="hitungLamaCuti()" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Lama Cuti (Hari)</label>
+          <input type="number" class="form-control bg-light" name="lama_cuti" id="lamaCuti" placeholder="Otomatis" readonly required>
+          <small class="text-muted" style="font-size: 0.75rem;">*Termasuk hari libur di rentang tanggal</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Alamat Selama Cuti</label>
+        <textarea class="form-control" name="alamat_cuti" rows="2" placeholder="Tuliskan alamat lengkap selama masa cuti" required></textarea>
+      </div>
+
+      <div class="row mb-3 g-3">
+        <div class="col-md-6">
+          <label class="form-label">No. Telepon / HP Darurat</label>
+          <input type="tel" class="form-control" name="no_hp" placeholder="Contoh: 0812xxxxxx" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nama Karyawan Pengganti</label>
+          <input type="text" class="form-control" name="pengganti" placeholder="Kosongkan jika tidak ada">
+        </div>
+      </div>
+
+      <!-- Tempat Notifikasi Berhasil/Gagal -->
+      <div id="pesan" class="alert mt-4" style="display: none; border-radius: 8px;"></div>
+
+      <div class="d-grid mt-5">
+        <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
+          <span id="btnText">Kirim Pengajuan Cuti</span>
+          <div class="spinner-border spinner-border-sm text-light ms-2" id="loadingSpinner" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  // Script untuk menghitung durasi cuti secara otomatis
+  function hitungLamaCuti() {
+    const tglMulai = document.getElementById('tglMulai').value;
+    const tglSelesai = document.getElementById('tglSelesai').value;
+    
+    if (tglMulai && tglSelesai) {
+      const date1 = new Date(tglMulai);
+      const date2 = new Date(tglSelesai);
+      
+      const diffTime = date2 - date1;
+      // +1 agar tanggal mulai juga terhitung sebagai 1 hari
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+      
+      if (diffDays > 0) {
+        document.getElementById('lamaCuti').value = diffDays;
+      } else {
+        document.getElementById('lamaCuti').value = '';
+        alert('Maaf, Tanggal Selesai tidak boleh mendahului Tanggal Mulai!');
+        document.getElementById('tglSelesai').value = ''; // Reset input tanggal selesai
+      }
+    }
+  }
+
+  // Script yang berjalan saat tombol Submit ditekan
+  function handleFormSubmit(event) {
+    event.preventDefault(); // Mencegah halaman reload
+    
+    // 1. Ubah tampilan tombol jadi loading
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('loadingSpinner').style.display = 'inline-block';
+    document.getElementById('btnText').innerText = 'Mengirim Data...';
+    document.getElementById('pesan').style.display = 'none';
+
+    // 2. Kumpulkan data dari form input
+    const form = document.getElementById('cutiForm');
+    const formData = new FormData(form);
+    const dataObj = {};
+    formData.forEach((value, key) => { dataObj[key] = value });
+
+    // 3. Kirim data ke fungsi simpanDataCuti di Kode.gs (Backend)
+    google.script.run
+      .withSuccessHandler(onSuccess) // Jika berhasil, jalankan fungsi onSuccess
+      .withFailureHandler(onFailure) // Jika gagal/error, jalankan fungsi onFailure
+      .simpanDataCuti(dataObj);
+  }
+
+  // Script jika respon dari Apps Script berhasil
+  function onSuccess(response) {
+    const pesanEl = document.getElementById('pesan');
+    pesanEl.style.display = 'block';
+    
+    if(response.status === 'success') {
+      pesanEl.className = 'alert alert-success';
+      pesanEl.innerHTML = '<strong>Berhasil!</strong> ' + response.message;
+      document.getElementById('cutiForm').reset(); // Kosongkan form untuk pengajuan berikutnya
+    } else {
+      // Menangkap error logika dari backend (misal sheet tidak ada)
+      pesanEl.className = 'alert alert-danger';
+      pesanEl.innerHTML = '<strong>Gagal!</strong> ' + response.message;
+    }
+    
+    kembalikanTombol();
+  }
+
+  // Script jika koneksi terputus atau terjadi error fatal pada server Google
+  function onFailure(error) {
+    const pesanEl = document.getElementById('pesan');
+    pesanEl.style.display = 'block';
+    pesanEl.className = 'alert alert-danger';
+    pesanEl.innerHTML = '<strong>Terjadi Kesalahan Sistem:</strong> ' + error.message;
+    
+    kembalikanTombol();
+  }
+
+  // Script untuk mereset tombol kembali seperti semula
+  function kembalikanTombol() {
+    document.getElementById('btnSubmit').disabled = false;
+    document.getElementById('loadingSpinner').style.display = 'none';
+    document.getElementById('btnText').innerText = 'Kirim Pengajuan Cuti';
+    
+    // Auto sembunyikan notifikasi setelah 5 detik (opsional)
+    setTimeout(() => {
+      document.getElementById('pesan').style.display = 'none';
+    }, 5000);
+  }
+</script>
+
+</body>
+</html>
