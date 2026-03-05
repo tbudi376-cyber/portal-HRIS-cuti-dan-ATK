@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { border: 4px solid rgba(0,0,0,.1); border-left-color: #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; display: inline-block;}
+        .btn-approve { background-color: #16a34a; color: white; } .btn-approve:hover { background-color: #15803d; }
+        .btn-reject { background-color: #dc2626; color: white; } .btn-reject:hover { background-color: #b91c1c; }
+        .tab-active { border-bottom-color: #4f46e5; color: #4f46e5; font-weight: 700; }
+        .input-mobile { padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; width: 100%;}
+    </style>
+</head>
+<body class="bg-gray-100 font-sans p-3 sm:p-6">
+    <div class="container mx-auto max-w-4xl">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Dasbor Admin ATK</h1>
+
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="flex flex-wrap -mb-px space-x-4 sm:space-x-8" aria-label="Tabs">
+                <button id="tab-requests" class="tab-active py-4 px-1 border-b-2 text-base sm:text-sm">Persetujuan</button>
+                <button id="tab-stock" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 text-base sm:text-sm">Kelola Stok</button>
+                <button id="tab-proofs" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 text-base sm:text-sm">Bukti Pengambilan</button>
+                <button id="tab-dashboard" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 text-base sm:text-sm">Laporan</button>
+            </nav>
+        </div>
+
+        <div class="space-y-6">
+            <div id="content-requests">
+                <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Menunggu Persetujuan</h2>
+                    <div id="requests-container" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- KELOLA STOK -->
+            <div id="content-stock" class="hidden">
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6">
+                        <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Tambah Stok Barang</h2>
+                        <form id="add-stock-form" class="space-y-4">
+                            <div class="block md:flex md:space-x-4 space-y-4 md:space-y-0">
+                                <div class="flex-grow">
+                                    <label for="item-search-input" class="block text-sm font-medium text-gray-700">Cari & Pilih Barang</label>
+                                    <input id="item-search-input" list="item-datalist" class="mt-1 block w-full input-mobile" placeholder="Ketik untuk mencari...">
+                                    <datalist id="item-datalist"></datalist>
+                                </div>
+                                <div class="w-full md:w-1/3">
+                                    <label for="quantity-add" class="block text-sm font-medium text-gray-700">Jumlah</label>
+                                    <input type="number" id="quantity-add" min="1" class="mt-1 block w-full input-mobile">
+                                </div>
+                            </div>
+                            <div><button type="submit" id="add-stock-btn" class="inline-flex justify-center py-2 px-4 rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Tambah Stok</button></div>
+                        </form>
+                        <div id="stock-notification" class="mt-4"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6">
+                        <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Tambah Barang Baru</h2>
+                        <form id="add-new-item-form" class="space-y-4">
+                            <div class="w-full"><label for="new-item-name" class="block text-sm font-medium text-gray-700">Nama Barang Baru</label><input type="text" id="new-item-name" class="mt-1 block w-full input-mobile"></div>
+                            <div class="flex space-x-4">
+                                <div class="w-1/2"><label for="initial-stock" class="block text-sm font-medium text-gray-700">Stok Awal</label><input type="number" id="initial-stock" min="0" class="mt-1 block w-full input-mobile"></div>
+                                <div class="w-1/2"><label for="low-stock-threshold" class="block text-sm font-medium text-gray-700">Batas Rendah</label><input type="number" id="low-stock-threshold" min="0" class="mt-1 block w-full input-mobile"></div>
+                            </div>
+                            <div><button type="submit" id="add-new-item-btn" class="inline-flex justify-center py-2 px-4 rounded-md text-white bg-green-600 hover:bg-green-700">Simpan Barang Baru</button></div>
+                        </form>
+                        <div id="new-item-notification" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUKTI PENGAMBILAN -->
+            <div id="content-proofs" class="hidden">
+                <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Riwayat Konfirmasi Pengambilan</h2>
+                    <div id="proofs-container" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD & LAPORAN -->
+            <div id="content-dashboard" class="hidden space-y-6">
+                <!-- PANEL BARU: EKSPOR LAPORAN -->
+                <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Ekspor Laporan (Excel/CSV)
+                    </h2>
+                    <div class="flex flex-col md:flex-row gap-4 items-end">
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</label>
+                            <input type="date" id="start-date" class="input-mobile">
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+                            <input type="date" id="end-date" class="input-mobile">
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <button onclick="downloadReport()" id="download-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">Unduh CSV</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">*Kosongkan tanggal untuk mengunduh semua data.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6"><h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">5 Barang Terlaris</h2><div><canvas id="top-items-chart"></canvas></div></div>
+                    <div class="bg-white rounded-lg shadow-xl p-5 sm:p-6"><h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Permintaan per Departemen</h2><div><canvas id="top-depts-chart"></canvas></div></div>
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow-xl p-5 sm:p-6"><h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Ringkasan Stok Rendah</h2><div id="low-stock-container"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL PENOLAKAN -->
+    <div id="rejection-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full transform transition-all scale-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Alasan Penolakan</h2>
+            <p class="text-sm text-gray-600 mb-4">Mohon jelaskan secara singkat mengapa permintaan ini ditolak.</p>
+            <textarea id="rejection-reason" rows="3" class="w-full input-mobile" placeholder="Contoh: Stok sedang dipesan, permintaan melebihi batas kuota."></textarea>
+            <div class="mt-4 flex justify-end space-x-2">
+                <button id="cancel-reject-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400">Batal</button>
+                <button id="confirm-reject-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">Tolak Permintaan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalRowToReject = null; 
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const content = { 
+                requests: document.getElementById('content-requests'), 
+                stock: document.getElementById('content-stock'), 
+                proofs: document.getElementById('content-proofs'),
+                dashboard: document.getElementById('content-dashboard') 
+            };
+            const tabs = { 
+                requests: document.getElementById('tab-requests'), 
+                stock: document.getElementById('tab-stock'), 
+                proofs: document.getElementById('tab-proofs'),
+                dashboard: document.getElementById('tab-dashboard') 
+            };
+            const containers = { 
+                requests: document.getElementById('requests-container'), 
+                proofs: document.getElementById('proofs-container'),
+                lowStock: document.getElementById('low-stock-container'), 
+                itemDatalist: document.getElementById('item-datalist') 
+            };
+            
+            const rejectionModal = document.getElementById('rejection-modal');
+            const reasonTextarea = document.getElementById('rejection-reason');
+            const confirmRejectBtn = document.getElementById('confirm-reject-btn');
+            const cancelRejectBtn = document.getElementById('cancel-reject-btn');
+            
+            let topItemsChart, topDeptsChart;
+
+            function switchTab(activeKey) {
+                Object.keys(tabs).forEach(key => {
+                    const isHidden = key !== activeKey;
+                    tabs[key].classList.toggle('tab-active', !isHidden);
+                    content[key].classList.toggle('hidden', isHidden);
+                });
+                if (activeKey === 'requests') loadRequests();
+                if (activeKey === 'stock') loadItemsForStockForm();
+                if (activeKey === 'proofs') loadProofRecords();
+                if (activeKey === 'dashboard') loadDashboardData();
+            }
+
+            Object.keys(tabs).forEach(key => tabs[key].addEventListener('click', () => switchTab(key)));
+            function renderLoading(container) { container.innerHTML = '<div class="flex justify-center items-center h-40"><div class="spinner"></div></div>'; }
+
+            // --- FUNGSI DOWNLOAD REPORT ---
+            window.downloadReport = function() {
+                const start = document.getElementById('start-date').value;
+                const end = document.getElementById('end-date').value;
+                const btn = document.getElementById('download-btn');
+                
+                btn.innerHTML = '<div class="spinner !w-5 !h-5 border-white border-l-transparent"></div> Memproses...';
+                btn.disabled = true;
+
+                google.script.run.withSuccessHandler(res => {
+                    btn.innerHTML = 'Unduh CSV';
+                    btn.disabled = false;
+                    if(res.success) {
+                        // Membuat link download sementara
+                        const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", `Laporan_ATK_${new Date().toISOString().slice(0,10)}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        alert("Gagal mengunduh: " + res.message);
+                    }
+                }).downloadReport(start, end);
+            }
+
+            function loadProofRecords() {
+                renderLoading(containers.proofs);
+                google.script.run.withSuccessHandler(data => {
+                    containers.proofs.innerHTML = '';
+                    if (!data || data.length === 0) { 
+                        containers.proofs.innerHTML = '<p class="text-center text-gray-500 py-8">Belum ada permintaan yang dikonfirmasi pengambilannya.</p>'; 
+                        return; 
+                    }
+                    data.forEach(req => {
+                        const card = document.createElement('div');
+                        card.className = 'p-4 border rounded-lg bg-white shadow-sm';
+                        card.innerHTML = `
+                            <div class="block sm:flex sm:justify-between sm:items-start">
+                                <div class="mb-4 sm:mb-0">
+                                    <p class="font-bold text-gray-800">${req.employeeName} <span class="font-normal text-gray-500 text-sm">- ${req.department}</span></p>
+                                    <p class="text-sm text-gray-500">${new Date(req.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                    <p class="text-sm text-gray-600">${req.employeeEmail}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-bold">${req.itemName} (x${req.quantity})</p>
+                                    <a href="${req.proofLink}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-1 rounded-md inline-block mt-1">
+                                        Lihat Bukti Foto
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        containers.proofs.appendChild(card);
+                    });
+                }).getConfirmedProofRecords();
+            }
+
+            function loadRequests() {
+                renderLoading(containers.requests);
+                google.script.run.withSuccessHandler(data => {
+                    containers.requests.innerHTML = '';
+                    if (!data || data.length === 0) { containers.requests.innerHTML = '<p class="text-center text-gray-500 py-8">Tidak ada permintaan menunggu.</p>'; return; }
+                    data.forEach(req => {
+                        const card = document.createElement('div');
+                        card.className = 'p-4 border rounded-lg bg-gray-50';
+                        card.id = `request-card-${req.rowNum}`;
+                        card.innerHTML = `
+                            <div class="block sm:flex sm:justify-between sm:items-start">
+                                <div class="mb-4 sm:mb-0">
+                                    <p class="font-bold text-gray-800">${req.employeeName} <span class="font-normal text-gray-500 text-sm">- ${req.department}</span></p>
+                                    <p class="text-sm text-gray-500">${new Date(req.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                </div>
+                                <div id="actions-${req.rowNum}" class="flex space-x-2">
+                                    <button onclick="processRequest(${req.rowNum}, true)" class="btn-approve px-3 py-1 rounded-md text-sm font-semibold">Setujui</button>
+                                    <button onclick="processRequest(${req.rowNum}, false)" class="btn-reject px-3 py-1 rounded-md text-sm font-semibold">Tolak</button>
+                                </div>
+                            </div>
+                            <div class="mt-4 border-t pt-3"><p class="text-md font-semibold">${req.itemName} - <span class="text-blue-600">Jumlah: ${req.quantity}</span></p></div>`;
+                        containers.requests.appendChild(card);
+                    });
+                }).getPendingRequests();
+            }
+
+            window.processRequest = function(rowNum, isApproved) {
+                if (isApproved) {
+                    executeProcess(rowNum, true, '');
+                } else {
+                    globalRowToReject = rowNum;
+                    reasonTextarea.value = '';
+                    rejectionModal.classList.remove('hidden');
+                }
+            }
+            
+            function executeProcess(rowNum, isApproved, reason) {
+                const actionDiv = document.getElementById(`actions-${rowNum}`);
+                if(actionDiv) actionDiv.innerHTML = '<div class="spinner !w-6 !h-6"></div>';
+
+                google.script.run.withSuccessHandler(response => { 
+                    if(response.success) { 
+                        const cardToRemove = document.getElementById(`request-card-${rowNum}`); 
+                        if(cardToRemove) cardToRemove.remove(); 
+                        if (isApproved && document.getElementById('content-proofs').classList.contains('hidden') === false) {
+                            loadProofRecords(); 
+                        }
+                    } else { 
+                        alert('Gagal: ' + response.message); 
+                        loadRequests(); 
+                    } 
+                }).processApproval(rowNum, isApproved, reason);
+            }
+            
+            confirmRejectBtn.addEventListener('click', () => {
+                const reason = reasonTextarea.value.trim();
+                if (reason.length < 5) {
+                    alert("Harap masukkan alasan penolakan yang jelas (minimal 5 karakter).");
+                    return;
+                }
+                rejectionModal.classList.add('hidden');
+                executeProcess(globalRowToReject, false, reason);
+                globalRowToReject = null;
+            });
+
+            cancelRejectBtn.addEventListener('click', () => {
+                rejectionModal.classList.add('hidden');
+                globalRowToReject = null;
+            });
+
+            function loadItemsForStockForm() {
+                google.script.run.withSuccessHandler(items => {
+                    containers.itemDatalist.innerHTML = '';
+                    items.forEach(item => { containers.itemDatalist.innerHTML += `<option value="${item.name}">`; });
+                }).getAtkItems();
+            }
+            
+            function loadDashboardData() {
+                renderLoading(containers.lowStock);
+                if (topItemsChart) topItemsChart.destroy();
+                if (topDeptsChart) topDeptsChart.destroy();
+                google.script.run.withSuccessHandler(data => {
+                    containers.lowStock.innerHTML = '';
+                    if (!data.lowStockItems || data.lowStockItems.length === 0) { containers.lowStock.innerHTML = '<p class="text-center text-gray-500 py-8">Semua stok aman.</p>';
+                    } else {
+                        let tableHTML = '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead>...</thead><tbody>';
+                        data.lowStockItems.forEach(item => { tableHTML += `<tr><td class="px-6 py-4 text-sm font-medium text-gray-900">${item.name}</td><td class="px-6 py-4 text-sm text-red-600 font-bold">${item.stock}</td><td class="px-6 py-4 text-sm text-gray-500">${item.threshold}</td></tr>`; });
+                        containers.lowStock.innerHTML = tableHTML.replace('<thead>...</thead>', '<thead><tr><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Barang</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Stok</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Batas</th></tr></thead>') + '</tbody></table></div>';
+                    }
+                    const topItemsCtx = document.getElementById('top-items-chart').getContext('2d');
+                    topItemsChart = new Chart(topItemsCtx, { type: 'bar', data: { labels: data.topItems.map(d => d[0]), datasets: [{ label: 'Jumlah Diminta', data: data.topItems.map(d => d[1]), backgroundColor: 'rgba(79, 70, 229, 0.8)' }] }, options: { indexAxis: 'y', responsive: true } });
+                    const topDeptsCtx = document.getElementById('top-depts-chart').getContext('2d');
+                    topDeptsChart = new Chart(topDeptsCtx, { type: 'pie', data: { labels: data.topDepts.map(d => d[0]), datasets: [{ label: 'Jumlah Permintaan', data: data.topDepts.map(d => d[1]), backgroundColor: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+                }).getDashboardData();
+            }
+
+            document.getElementById('add-stock-form').addEventListener('submit', function(e) { e.preventDefault(); const btn = document.getElementById('add-stock-btn'); const notification = document.getElementById('stock-notification'); const itemName = document.getElementById('item-search-input').value; const quantity = document.getElementById('quantity-add').value; btn.disabled = true; btn.textContent = 'Menyimpan...'; notification.innerHTML = ''; google.script.run.withSuccessHandler(response => { btn.disabled = false; btn.textContent = 'Tambah Stok'; notification.innerHTML = `<p class="${response.success ? 'text-green-600' : 'text-red-600'}">${response.message}</p>`; if (response.success) { this.reset(); loadItemsForStockForm(); } }).addStock(itemName, quantity); });
+            document.getElementById('add-new-item-form').addEventListener('submit', function(e) { e.preventDefault(); const btn = document.getElementById('add-new-item-btn'); const notification = document.getElementById('new-item-notification'); const itemName = document.getElementById('new-item-name').value; const initialStock = document.getElementById('initial-stock').value; const lowStockThreshold = document.getElementById('low-stock-threshold').value; btn.disabled = true; btn.textContent = 'Menyimpan...'; notification.innerHTML = ''; google.script.run.withSuccessHandler(response => { btn.disabled = false; btn.textContent = 'Simpan Barang Baru'; notification.innerHTML = `<p class="${response.success ? 'text-green-600' : 'text-red-600'}">${response.message}</p>`; if(response.success) { this.reset(); loadItemsForStockForm(); } }).addNewItem(itemName, initialStock, lowStockThreshold); });
+            
+            loadRequests();
+        });
+    </script>
+</body>
+</html>
