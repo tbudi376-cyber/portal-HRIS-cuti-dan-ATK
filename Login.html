@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Portal HRIS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f3f4f6; }
+    .spinner { border: 3px solid rgba(255,255,255,.3); border-left-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px;}
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+  <div class="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl mx-4">
+    
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800">Portal HRIS Karyawan</h2>
+      <p class="text-sm text-gray-500 mt-1">Silakan masuk menggunakan akun Anda</p>
+    </div>
+
+    <!-- Alert Box untuk Error -->
+    <div id="error-alert" class="hidden mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200 text-center font-medium">
+      Email atau Password salah!
+    </div>
+
+    <form id="login-form" class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="email@perusahaan.com" required>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" id="btn-login" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition transform active:scale-95">
+        Masuk Aplikasi
+      </button>
+    </form>
+    
+    <div class="mt-6 text-center text-xs text-gray-400">
+      &copy; 2024 HR & General Affairs Department
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('btn-login');
+      const errorAlert = document.getElementById('error-alert');
+      
+      // Tampilan Loading
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Memverifikasi...';
+      errorAlert.classList.add('hidden');
+
+      // Panggil fungsi Apps Script
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (response.success) {
+            // Jika berhasil login, simpan data user di Browser (Local Storage)
+            localStorage.setItem('userHRIS', JSON.stringify(response.userData));
+            
+            btn.classList.replace('bg-indigo-600', 'bg-green-600');
+            btn.innerHTML = 'Berhasil! Mengalihkan...';
+            
+            // Arahkan ke halaman berdasarkan peran
+            setTimeout(() => {
+              if(response.userData.peran === 'Admin') {
+                window.top.location.href = "<?= getScriptUrl() ?>?page=admin";
+              } else {
+                window.top.location.href = "<?= getScriptUrl() ?>?page=menu";
+              }
+            }, 1000);
+
+          } else {
+            // Jika gagal login
+            errorAlert.textContent = response.message;
+            errorAlert.classList.remove('hidden');
+            btn.disabled = false;
+            btn.innerHTML = 'Masuk Aplikasi';
+          }
+        })
+        .withFailureHandler(function(error) {
+          errorAlert.textContent = "Koneksi terputus: " + error.message;
+          errorAlert.classList.remove('hidden');
+          btn.disabled = false;
+          btn.innerHTML = 'Masuk Aplikasi';
+        })
+        .prosesLogin(email, password);
+    });
+  </script>
+
+</body>
+</html>
