@@ -378,9 +378,6 @@
             if(tabId === 'riwayat') { loadUserRiwayatCuti(); loadUserRiwayatAtk(); }
         }
 
-        // ==========================================
-        // 2. LOGIKA FORM CUTI
-        // ==========================================
         window.hitungLamaCuti = function() {
             const t1 = document.getElementById('cuti-tgl-mulai').value;
             const t2 = document.getElementById('cuti-tgl-selesai').value;
@@ -412,7 +409,7 @@
         });
 
         // ==========================================
-        // 3. LOGIKA FORM ATK
+        // 3. LOGIKA FORM ATK (PERBAIKAN ATRIBUT)
         // ==========================================
         function loadAtkItemsList() {
             const container = document.getElementById('atk-items-container');
@@ -423,7 +420,10 @@
                     const isOut = item.stock <= 0; const isP3k = item.name.toLowerCase().includes('p3k') || item.name.toLowerCase().includes('obat');
                     let rowClass = 'item-row ' + (isOut ? 'bg-gray-50 opacity-60' : (isP3k ? 'bg-p3k' : 'hover:bg-gray-50'));
                     let lblClass = 'font-medium ' + (isOut ? 'line-through text-gray-400' : (isP3k ? 'text-green-800 font-bold' : 'text-gray-800'));
-                    container.innerHTML += `<div class="${rowClass}"><div class="flex items-center flex-grow py-1"><input type="checkbox" id="atk-cb-${index}" data-name="${item.name}" class="atk-checkbox w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" ${isOut ? 'disabled' : ''}><div class="ml-3 text-sm leading-tight"><label for="atk-cb-${index}" class="${lblClass}">${item.name}</label><span class="block text-xs text-gray-500">Sisa Stok: ${item.stock}</span></div></div><div class="ml-4"><input type="number" min="1" max="${item.stock}" value="1" class="atk-quantity w-20 input-custom py-1 text-center hidden" placeholder="Jml"></div></div>`;
+                    container.innerHTML += `<div class="${rowClass}"><div class="flex items-center flex-grow py-1">
+                    <!-- PERBAIKAN: data-name diganti agar sesuai pemanggilan -->
+                    <input type="checkbox" id="atk-cb-${index}" data-name="${item.name}" class="atk-checkbox w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" ${isOut ? 'disabled' : ''}>
+                    <div class="ml-3 text-sm leading-tight"><label for="atk-cb-${index}" class="${lblClass}">${item.name}</label><span class="block text-xs text-gray-500">Sisa Stok: ${item.stock}</span></div></div><div class="ml-4"><input type="number" min="1" max="${item.stock}" value="1" class="atk-quantity w-20 input-custom py-1 text-center hidden" placeholder="Jml"></div></div>`;
                 });
                 container.querySelectorAll('.atk-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const row = e.target.closest('.item-row'); const qty = row.querySelector('.atk-quantity'); if (e.target.checked) { qty.classList.remove('hidden'); row.classList.add('bg-blue-50'); qty.focus(); } else { qty.classList.add('hidden'); row.classList.remove('bg-blue-50'); } }); });
             }).getAtkItems();
@@ -438,9 +438,18 @@
         });
 
         document.getElementById('form-atk-app').addEventListener('submit', function(e) {
-            e.preventDefault(); const alertBox = document.getElementById('alert-atk'); const btn = document.getElementById('btn-submit-atk'); alertBox.classList.add('hidden');
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-atk'); const btn = document.getElementById('btn-submit-atk'); alertBox.classList.add('hidden');
             const selectedItems = [];
-            document.getElementById('atk-items-container').querySelectorAll('.atk-checkbox:checked').forEach(cb => { const qty = parseInt(cb.closest('.item-row').querySelector('.atk-quantity').value); if(qty > 0) selectedItems.push({ name: cb.getAttribute('data-name'), quantity: qty }); });
+            
+            // PERBAIKAN: Mencari atribut data-name dengan benar
+            document.getElementById('atk-items-container').querySelectorAll('.atk-checkbox:checked').forEach(cb => { 
+                const qty = parseInt(cb.closest('.item-row').querySelector('.atk-quantity').value); 
+                if(qty > 0) {
+                    selectedItems.push({ name: cb.getAttribute('data-name'), quantity: qty }); 
+                }
+            });
+            
             if (selectedItems.length === 0) { alertBox.textContent = 'Pilih minimal satu barang!'; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block'; return; }
 
             btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white"></div> Mengirim...';
@@ -451,9 +460,6 @@
             }).submitRequest({ employeeName: currentUser.nama, employeeEmail: currentUser.email, department: currentUser.divisi, requestedItems: selectedItems });
         });
 
-        // ==========================================
-        // 4. LOGIKA RIWAYAT (CUTI & ATK) (SUDAH DIPERBAIKI)
-        // ==========================================
         window.loadUserRiwayatCuti = function() {
             if(!currentUser) return;
             const tbody = document.getElementById('table-riwayat-cuti');
@@ -517,9 +523,6 @@
             };
         });
 
-        // ==========================================
-        // 5. PENGATURAN AKUN (UBAH PASSWORD)
-        // ==========================================
         window.bukaModalPassword = function() { document.getElementById('form-ubah-password').reset(); document.getElementById('pass-alert').classList.add('hidden'); document.getElementById('password-modal').classList.remove('hidden'); }
         window.tutupModalPassword = function() { document.getElementById('password-modal').classList.add('hidden'); }
         document.getElementById('form-ubah-password').addEventListener('submit', function(e) {
