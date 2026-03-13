@@ -1,13 +1,26 @@
 // Variabel Konfigurasi
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1BuY4yZ_CPzcJoUh6l1fEfMuQVQtCskctzppnBC_PDlU/';
 const ADMIN_EMAIL = 'tubagus.budi@thopasindo.com'; 
-const DRIVE_FOLDER_ID = '16T9zbcfXDLGo63zdAq0mZC-mELVqH9Gk'; 
 const SENDER_NAME = 'HRIS & Logistic Portal';
 
+// NAMA-NAMA SHEET
 const ATK_LIST_SHEET_NAME = 'Daftar ATK';
 const REQUEST_LOG_SHEET_NAME = 'Permintaan ATK';
 const KARYAWAN_SHEET_NAME = 'Data Karyawan';
 const CUTI_SHEET_NAME = 'Data Cuti';
+
+// FUNGSI AUTO-CREATE SHEET UNTUK PENGUMUMAN & KALENDER
+function checkAndCreateSheets() {
+  const ss = SpreadsheetApp.openByUrl(SHEET_URL);
+  if(!ss.getSheetByName('Pengumuman')) {
+    let sh = ss.insertSheet('Pengumuman');
+    sh.appendRow(['Judul Pengumuman', 'Tanggal Berlaku', 'Isi Pengumuman', 'Warna']);
+  }
+  if(!ss.getSheetByName('Libur Nasional')) {
+    let sh = ss.insertSheet('Libur Nasional');
+    sh.appendRow(['Tanggal', 'Nama Libur', 'Keterangan', 'Status']);
+  }
+}
 
 function safeDateString(val) {
   if (!val) return '';
@@ -30,16 +43,23 @@ function hashPassword(password) {
 
 function doGet(e) {
   try {
+    checkAndCreateSheets(); // Auto-inisialisasi database
     var page = e.parameter.page;
     if (!page || page == 'login') return HtmlService.createTemplateFromFile('Login').evaluate().setTitle('Login Portal HRIS').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
     else if (page == 'menu') return HtmlService.createTemplateFromFile('MenuUtama').evaluate().setTitle('Portal HR & GA').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
     else if (page == 'admin') return HtmlService.createTemplateFromFile('Dasbor').evaluate().setTitle('Halaman Admin HRIS').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
-    else return HtmlService.createHtmlOutput("<h2>Halaman tidak ditemukan.</h2>");
+    else if (page == 'Form') return HtmlService.createTemplateFromFile('Form').evaluate().setTitle('Form Permintaan ATK').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    else if (page == 'FormCuti') return HtmlService.createTemplateFromFile('FormCuti').evaluate().setTitle('Form Pengajuan Cuti').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    else if (page == 'riwayat') return HtmlService.createTemplateFromFile('Riwayat').evaluate().setTitle('Riwayat Permintaan ATK').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    else return HtmlService.createHtmlOutput("<h2>Halaman '" + page + "' tidak ditemukan.</h2>");
   } catch (err) { return HtmlService.createHtmlOutput("<h2>Terjadi Kesalahan: " + err.message + "</h2>"); }
 }
 
 function getScriptUrl() { return ScriptApp.getService().getUrl(); }
 
+// ==========================================
+// 2. FUNGSI AUTENTIKASI & USER
+// ==========================================
 function prosesLogin(email, password) {
   try {
     const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(KARYAWAN_SHEET_NAME);
@@ -59,14 +79,16 @@ function prosesLogin(email, password) {
 }
 
 function getSisaCuti(email) {
-  const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(KARYAWAN_SHEET_NAME);
-  const data = sheet.getDataRange().getValues();
-  const targetEmail = email.trim().toLowerCase();
-  for (let i = 1; i < data.length; i++) {
-    let dbEmail = data[i][2] ? data[i][2].toString().trim().toLowerCase() : '';
-    if (dbEmail === targetEmail) return data[i][7];
-  }
-  return '-';
+  try {
+    const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(KARYAWAN_SHEET_NAME);
+    const data = sheet.getDataRange().getValues();
+    const targetEmail = (email || '').toString().trim().toLowerCase();
+    for (let i = 1; i < data.length; i++) {
+      let dbEmail = data[i][2] ? data[i][2].toString().trim().toLowerCase() : '';
+      if (dbEmail === targetEmail) return data[i][7];
+    }
+    return '-';
+  } catch(e) { return '-'; }
 }
 
 function getEmailByName(nama) {
@@ -103,59 +125,56 @@ function simpanDataCuti(dataForm) {
 
 function submitRequest(formData) {
   try {
-    const logSheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME);
+    const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME);
+    if(!sheet) throw new Error("Sheet Permintaan ATK tidak ditemukan.");
     const timestamp = new Date();
     const requestId = `REQ-${timestamp.getTime()}`;
-    formData.requestedItems.forEach(item => { logSheet.appendRow([requestId, timestamp, formData.employeeName, formData.employeeEmail, formData.department, item.name, item.quantity, 'Menunggu Persetujuan', '']); });
-    try { MailApp.sendEmail({ to: ADMIN_EMAIL, subject: `[Logistik] Permintaan ATK Baru: ${formData.employeeName}`, body: `Ada permintaan ATK baru dari ${formData.employeeName}. Silakan cek Dasbor Admin.`, name: SENDER_NAME }); } catch(e){}
+    formData.requestedItems.forEach(item => { sheet.appendRow([requestId, timestamp, formData.employeeName, formData.employeeEmail, formData.department, item.name, item.quantity, 'Menunggu Persetujuan', '']); });
+    try { MailApp.sendEmail({ to: ADMIN_EMAIL, subject: `[Logistik] Permintaan Barang Baru: ${formData.employeeName}`, body: `Ada permintaan ATK baru dari ${formData.employeeName}. Silakan cek Dasbor Admin.`, name: SENDER_NAME }); } catch(e){}
     return { success: true, message: 'Permintaan ATK berhasil dikirim.' };
   } catch (error) { return { success: false, message: error.message }; }
 }
 
 function getAtkItems() { return SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(ATK_LIST_SHEET_NAME).getRange('A2:B' + SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(ATK_LIST_SHEET_NAME).getLastRow()).getValues().map(row => ({ name: row[0], stock: parseInt(row[1]) || 0 })).filter(item => item.name && item.name.trim() !== ''); }
 
-// FIX: Pencarian kebal typo spasi/huruf untuk ATK
 function getUserRequests(email) { 
-  const data = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME).getDataRange().getValues(); 
-  const requests = []; 
-  const targetEmail = email.trim().toLowerCase();
-  for (let i = data.length - 1; i > 0; i--) { 
-    let sheetEmail = data[i][3] ? data[i][3].toString().trim().toLowerCase() : '';
-    if (sheetEmail === targetEmail) { 
-      requests.push({ rowNum: i + 1, timestamp: safeDateString(data[i][1]), itemName: data[i][5], quantity: data[i][6], status: data[i][7], proofLink: data[i][8] || null }); 
-    } 
-  } 
-  return requests; 
+  try {
+      const data = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME).getDataRange().getValues(); 
+      const requests = []; 
+      const targetEmail = (email || '').toString().trim().toLowerCase();
+      for (let i = data.length - 1; i > 0; i--) { 
+        let sheetEmail = data[i][3] ? data[i][3].toString().trim().toLowerCase() : '';
+        if (sheetEmail === targetEmail) { requests.push({ rowNum: i + 1, timestamp: safeDateString(data[i][1]), itemName: data[i][5], quantity: data[i][6], status: data[i][7], proofLink: data[i][8] || null }); } 
+      } 
+      return requests; 
+  } catch(e) { return []; }
 }
 
-// FIX: Pencarian kebal typo spasi/huruf untuk CUTI
 function getUserCuti(nama) { 
-  const data = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(CUTI_SHEET_NAME).getDataRange().getValues(); 
-  const requests = []; 
-  const targetName = nama.trim().toLowerCase();
-  for (let i = data.length - 1; i > 0; i--) { 
-    let sheetName = data[i][1] ? data[i][1].toString().trim().toLowerCase() : '';
-    if (sheetName === targetName) { 
-      let st = data[i][12] ? data[i][12].toString() : 'Menunggu Persetujuan';
-      requests.push({ timestamp: safeDateString(data[i][0]), jenis: data[i][5], tglMulai: safeDateString(data[i][6]), tglSelesai: safeDateString(data[i][7]), lama: data[i][8], status: st }); 
-    } 
-  } 
-  return requests; 
+  try {
+      const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(CUTI_SHEET_NAME);
+      if(!sheet) return [];
+      const data = sheet.getDataRange().getValues(); 
+      const requests = []; 
+      const targetName = (nama || '').toString().trim().toLowerCase();
+      for (let i = data.length - 1; i > 0; i--) { 
+        let sheetName = data[i][1] ? data[i][1].toString().trim().toLowerCase() : '';
+        if (sheetName === targetName) { 
+          let st = data[i][12] ? data[i][12].toString() : 'Menunggu Persetujuan';
+          requests.push({ timestamp: safeDateString(data[i][0]), nama: data[i][1], jabatan: data[i][2], divisi: data[i][3], penempatan: data[i][4], jenis: data[i][5], tglMulai: safeDateString(data[i][6]), tglSelesai: safeDateString(data[i][7]), lama: data[i][8], alamat: data[i][9], noHp: data[i][10], pengganti: data[i][11], status: st }); 
+        } 
+      } 
+      return requests; 
+  } catch(e) { return []; }
 }
 
 function confirmPickupWithPhoto(fileData, rowNum) {
   try {
     const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME);
     const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const contentType = fileData.mimeType || 'image/png';
-    const blob = Utilities.newBlob(Utilities.base64Decode(fileData.base64Data.split(',')[1]), contentType, fileData.fileName);
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const fileUrl = file.getUrl();
-
-    sheet.getRange(rowNum, 8).setValue('Sudah Diambil'); 
-    sheet.getRange(rowNum, 9).setValue(fileUrl); 
-
+    const blob = Utilities.newBlob(Utilities.base64Decode(fileData.base64Data.split(',')[1]), fileData.mimeType || 'image/png', fileData.fileName);
+    const fileUrl = folder.createFile(blob).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW).getUrl();
+    sheet.getRange(rowNum, 8).setValue('Sudah Diambil'); sheet.getRange(rowNum, 9).setValue(fileUrl); 
     return { success: true, newStatus: 'Sudah Diambil', proofLink: fileUrl };
   } catch (e) { return { success: false, message: 'Gagal menyimpan foto: ' + e.message }; }
 }
@@ -246,4 +265,77 @@ function ubahPassword(email, oldPassword, newPassword) {
     }
     return { success: false, message: 'Akun tidak ditemukan.' };
   } catch (e) { return { success: false, message: 'Terjadi kesalahan: ' + e.message }; }
+}
+
+// =================================================================
+// 6. FUNGSI UNTUK PENGUMUMAN & KALENDER (DIPERBAIKI APINYA)
+// =================================================================
+function getHomeData() {
+  try {
+    const sheetPengumuman = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman');
+    const sheetLibur = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Libur Nasional');
+    let pengumuman = [];
+    if (sheetPengumuman) {
+      const dataP = sheetPengumuman.getDataRange().getDisplayValues();
+      for(let i = 1; i < dataP.length; i++) { if(dataP[i][0]) { pengumuman.push({ judul: dataP[i][0], tanggal: dataP[i][1], isi: dataP[i][2], warna: dataP[i][3] || 'Biru' }); } }
+    }
+    let libur = [];
+    if (sheetLibur) {
+      const dataL = sheetLibur.getDataRange().getValues();
+      for(let i = 1; i < dataL.length; i++) { if(dataL[i][0]) { libur.push({ tanggal: safeDateString(dataL[i][0]), nama: dataL[i][1], keterangan: dataL[i][2], status: dataL[i][3] || 'Libur' }); } }
+    }
+    return { success: true, pengumuman: pengumuman, libur: libur };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function getAdminInfoData() {
+    const sheetP = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman');
+    const sheetL = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Libur Nasional');
+    let pList = [], lList = [];
+    if(sheetP) { const dP = sheetP.getDataRange().getDisplayValues(); for(let i=1; i<dP.length; i++) { if(dP[i][0]) pList.push({rowNum: i+1, judul: dP[i][0], tanggal: dP[i][1], isi: dP[i][2], warna: dP[i][3]}); } }
+    if(sheetL) { const dL = sheetL.getDataRange().getValues(); for(let i=1; i<dL.length; i++) { if(dL[i][0]) lList.push({rowNum: i+1, tanggal: safeDateString(dL[i][0]), nama: dL[i][1], keterangan: dL[i][2], status: dL[i][3]}); } }
+    return { pengumuman: pList, libur: lList };
+}
+
+function simpanPengumuman(j, t, i, w) { SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman').appendRow([j, t, i, w]); return {success:true}; }
+function hapusPengumuman(row) { SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman').deleteRow(row); return {success:true}; }
+function simpanLibur(t, n, k, s) { SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Libur Nasional').appendRow([t, n, k, s]); return {success:true}; }
+function hapusLibur(row) { SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Libur Nasional').deleteRow(row); return {success:true}; }
+
+// FUNGSI TARIK DATA API (DIPERBAIKI)
+function syncLiburNasional(year) {
+  try {
+    // Menggunakan API baru yang lebih stabil dan lengkap
+    const url = 'https://api-harilibur.vercel.app/api?year=' + year;
+    const response = UrlFetchApp.fetch(url, {muteHttpExceptions: true});
+    
+    if(response.getResponseCode() !== 200) {
+        throw new Error("Penyedia API sedang down/gangguan (404/500)");
+    }
+    
+    const json = JSON.parse(response.getContentText());
+    const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Libur Nasional');
+    
+    // Hapus seluruh data lama yang ada di sheet (Kecuali baris 1 header)
+    if(sheet.getLastRow() > 1) { 
+        sheet.getRange(2, 1, sheet.getLastRow()-1, 4).clearContent(); 
+    }
+    
+    // Masukkan data baru dari pemerintah
+    json.forEach(item => {
+      // is_national_holiday adalah boolean yang menandakan hari merah resmi
+      if(item.is_national_holiday) {
+         let isCuti = item.holiday_name.toLowerCase().includes('cuti bersama');
+         let statusLabel = isCuti ? 'Cuti Bersama' : 'Libur Nasional';
+         let badgeLabel = isCuti ? 'Cuti' : 'Libur';
+         
+         // item.holiday_date formatnya "2025-01-01"
+         sheet.appendRow([item.holiday_date, item.holiday_name, statusLabel, badgeLabel]);
+      }
+    });
+    
+    return {success: true, message: 'Berhasil menyinkronkan jadwal libur untuk tahun ' + year};
+  } catch(e) {
+    return {success: false, message: 'Gagal Menarik API: ' + e.message + '. Silakan tambah manual.'};
+  }
 }
