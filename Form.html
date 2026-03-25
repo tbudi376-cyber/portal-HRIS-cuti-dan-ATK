@@ -1,185 +1,356 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <base target="_top">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Permintaan ATK</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Form Permintaan ATK & P3K</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Animasi Loading */
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { border: 4px solid rgba(0,0,0,.1); border-left-color: #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        .btn-confirm { background-color: #16a34a; color: white; }
-        .btn-confirm:hover { background-color: #15803d; }
-        .btn-confirm:disabled { background-color: #9ca3af; }
+        .spinner { border: 3px solid rgba(0,0,0,.1); border-left-color: #2563eb; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px;}
+        
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .hidden { display: none !important; }
+        
+        /* Style Input Mobile Friendly */
+        .input-mobile {
+            width: 100%;
+            padding: 0.75rem 1rem; 
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            background-color: white;
+            transition: ring 0.2s;
+        }
+        .input-mobile:focus {
+            outline: none;
+            ring: 2px solid #3b82f6;
+            border-color: #3b82f6;
+        }
+        select.input-mobile {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        .label-mobile {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Style Checkbox List */
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s;
+        }
+        .item-row:last-child { border-bottom: none; }
+        
+        /* Style khusus P3K */
+        .bg-p3k { background-color: #f0fdf4; } /* Hijau sangat muda */
+        .bg-p3k:hover { background-color: #dcfce7; }
+        .border-p3k { border-left: 4px solid #22c55e; } /* Garis hijau di kiri */
+
+        .hidden-by-search { display: none; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans p-3 sm:p-6">
-    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-2xl">
-        <div class="bg-white rounded-lg shadow-xl p-5 sm:p-8">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Lacak & Konfirmasi Permintaan</h1>
-            <p class="text-gray-600 mb-6 text-sm sm:text-base">Masukkan email Anda untuk melihat riwayat permintaan dan melakukan konfirmasi pengambilan barang.</p>
+<body class="p-3 sm:p-6">
 
-            <form id="search-form">
-                <div class="mb-4">
-                    <label for="email-search" class="block text-gray-700 font-semibold mb-2">Email Karyawan</label>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input type="email" id="email-search" class="w-full px-4 py-3 sm:py-2 border rounded-md text-base" placeholder="Masukkan email Anda..." required>
-                        <button type="submit" id="search-btn" class="w-full sm:w-auto bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition">Cari</button>
+    <!-- Tombol Kembali ke Menu Utama -->
+    <div class="max-w-3xl mx-auto mb-4">
+        <a href="<?= getScriptUrl() ?>?page=menu" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 bg-white py-2 px-4 rounded-lg shadow-sm border border-gray-200 transition">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Kembali ke Menu Utama
+        </a>
+    </div>
+
+    <!-- KONTAINER UTAMA -->
+    <div id="main-container" class="max-w-3xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+        
+        <!-- Header Area -->
+        <div class="bg-white p-6 border-b text-center">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800">Permintaan Logistik Kantor</h2>
+            <p class="text-gray-500 text-sm mt-1">ATK & Kotak P3K</p>
+        </div>
+
+        <div class="p-5 sm:p-8">
+            <form id="atk-form" novalidate class="space-y-6">
+                
+                <!-- I. DATA PEMOHON -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <h3 class="font-bold text-blue-800 text-sm uppercase mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                        I. Data Pemohon
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="label-mobile">Nama Karyawan</label>
+                            <input type="text" id="employeeName" class="input-mobile" placeholder="Nama Lengkap">
+                        </div>
+                        <div>
+                            <label class="label-mobile">Email Karyawan</label>
+                            <input type="email" id="employeeEmail" class="input-mobile" placeholder="nama@email.com">
+                        </div>
+                        
+                        <div>
+                            <label class="label-mobile">Departemen</label>
+                            <select id="department" class="input-mobile">
+                                <option value="" disabled selected>Pilih Departemen...</option>
+                                <option value="PT Thopas Artha Nauli">Thopas</option>
+                                <option value="PT Rezeki Bersama Teknologi">Finplus</option>
+                                <option value="PT Solusi Pembayaran Nasional">SPN</option>
+                                <option value="PT Prima Artha Solusi">PAS</option>
+                                <option value="Bank Vima">Vima</option>
+                                <option value="Operasional">Operasional</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </form>
 
-            <div id="result-container" class="mt-8"></div>
+                <!-- II. PILIH BARANG -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 class="font-bold text-gray-700 text-sm uppercase mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+                        II. Pilih Barang
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <label class="label-mobile">Cari Barang</label>
+                        <div class="relative">
+                            <input type="text" id="search-atk" class="input-mobile pl-10" placeholder="Cari ATK atau P3K...">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">*Item <span class="text-green-600 font-bold">Hijau</span> adalah P3K/Obat.</p>
+                    </div>
+
+                    <div class="bg-white rounded-md border border-gray-300 max-h-80 overflow-y-auto" id="atk-items-container">
+                        <!-- Spinner awal -->
+                        <div id="loading-spinner" class="p-8 text-center text-gray-500">
+                            <div class="spinner"></div> Memuat daftar...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOMBOL AKSI -->
+                <div class="pt-2 space-y-3">
+                    <button type="submit" id="submit-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg text-lg transition transform active:scale-95">
+                        Kirim Permintaan
+                    </button>
+                    
+                    <a href="<?= getScriptUrl() ?>?page=riwayat" class="block w-full bg-white border border-indigo-600 text-indigo-600 text-center py-4 rounded-xl font-bold shadow-sm text-lg hover:bg-indigo-50 transition">
+                        Lacak Permintaan Saya
+                    </a>
+                </div>
+
+            </form>
             
-            <!-- Link Kembali ke Menu Utama yang sudah diperbarui -->
-            <div class="mt-8 pt-6 border-t border-gray-200 text-center">
-                <a href="<?= getScriptUrl() ?>?page=menu" class="inline-flex items-center justify-center text-indigo-600 hover:text-indigo-800 font-medium transition">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Kembali ke Menu Utama
-                </a>
-            </div>
+            <!-- Notifikasi Error -->
+            <div id="notification-error" class="mt-6 p-4 rounded-lg text-center font-bold bg-red-100 text-red-800 hidden border border-red-200"></div>
         </div>
     </div>
-    
-    <input type="file" id="photo-upload-input" accept="image/*" capture="user" class="hidden">
+
+    <!-- MODAL SUKSES -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transform transition-all scale-100">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Berhasil!</h2>
+            <p class="text-gray-600 mb-6 text-base">Permintaan berhasil dikirim.<br>Silahkan konfirmasi ke GA untuk approval.</p>
+            <button id="close-modal-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl text-lg hover:bg-indigo-700 transition">Tutup</button>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const searchForm = document.getElementById('search-form');
-            const searchBtn = document.getElementById('search-btn');
-            const emailInput = document.getElementById('email-search');
-            const resultContainer = document.getElementById('result-container');
-            const fileInput = document.getElementById('photo-upload-input');
+            const form = document.getElementById('atk-form');
+            const atkContainer = document.getElementById('atk-items-container');
+            const searchInput = document.getElementById('search-atk');
+            const submitButton = document.getElementById('submit-button');
+            const notificationError = document.getElementById('notification-error');
+            const employeeNameInput = document.getElementById('employeeName');
+            const employeeEmailInput = document.getElementById('employeeEmail');
+            const departmentInput = document.getElementById('department');
+            const successModal = document.getElementById('success-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            // Fungsi Search
+            searchInput.addEventListener('keyup', () => {
+                const filter = searchInput.value.toLowerCase();
+                const items = atkContainer.querySelectorAll('.item-row');
+                items.forEach(item => {
+                    const label = item.querySelector('label');
+                    if (label.textContent.toLowerCase().includes(filter)) { item.classList.remove('hidden-by-search'); } else { item.classList.add('hidden-by-search'); }
+                });
+            });
             
-            let currentRowNum = null;
-
-            searchForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = emailInput.value;
-                if (!email) {
-                    resultContainer.innerHTML = '<p class="text-red-500 text-center">Harap masukkan email.</p>';
-                    return;
+            function showNotification(message, isSuccess) {
+                if (isSuccess) { successModal.classList.remove('hidden'); } else {
+                    notificationError.textContent = message;
+                    notificationError.classList.remove('hidden');
+                    notificationError.scrollIntoView({behavior: "smooth", block: "center"});
                 }
-                
-                searchBtn.disabled = true;
-                searchBtn.textContent = 'Mencari...';
-                resultContainer.innerHTML = '<div class="flex justify-center items-center h-40"><div class="spinner"></div></div>';
+            }
 
+            function hideModal() { successModal.classList.add('hidden'); }
+            closeModalBtn.addEventListener('click', hideModal);
+            successModal.addEventListener('click', (e) => { if (e.target === successModal) { hideModal(); } });
+            
+            function loadAtkItems() {
                 google.script.run
-                    .withSuccessHandler(renderResults)
-                    .withFailureHandler(showError)
-                    .getUserRequests(email);
-            });
+                    .withSuccessHandler(items => {
+                        atkContainer.innerHTML = ''; 
+                        
+                        if (!items || items.length === 0) { 
+                            atkContainer.innerHTML = '<div class="p-8 text-center text-gray-500">Daftar ATK kosong atau gagal dimuat.</div>'; 
+                            return; 
+                        }
+                        
+                        items.forEach((item, index) => {
+                            const isOutOfStock = item.stock <= 0;
+                            const isP3K = item.name.toLowerCase().includes('p3k') || item.name.toLowerCase().includes('obat');
+                            
+                            // Logika Pewarnaan
+                            let rowClass = 'item-row';
+                            let labelClass = 'font-medium text-gray-900';
+                            
+                            if (isOutOfStock) {
+                                rowClass += ' bg-gray-50 opacity-60';
+                                labelClass += ' line-through text-gray-400';
+                            } else if (isP3K) {
+                                rowClass += ' bg-p3k border-p3k'; // Tambah warna hijau
+                                labelClass += ' text-green-800';
+                            } else {
+                                rowClass += ' hover:bg-gray-50';
+                            }
 
-            function renderResults(requests) {
-                searchBtn.disabled = false;
-                searchBtn.textContent = 'Cari';
-                if (requests.length === 0) {
-                    resultContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Tidak ada permintaan yang ditemukan.</p>';
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = rowClass;
+                            
+                            const checkboxId = 'item-' + index;
+                            itemDiv.innerHTML = `
+                                <div class="flex items-center flex-grow py-1">
+                                    <div class="relative flex items-start">
+                                        <div class="flex items-center h-6">
+                                            <input type="checkbox" id="${checkboxId}" data-item-name="${item.name}" class="atk-checkbox h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" ${isOutOfStock ? 'disabled' : ''}>
+                                        </div>
+                                        <div class="ml-3 text-sm leading-6">
+                                            <label for="${checkboxId}" class="${labelClass}">${item.name}</label>
+                                            <span class="block text-xs text-gray-500">Sisa Stok: ${item.stock}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <input type="number" min="1" max="${item.stock}" value="1" class="atk-quantity w-20 input-mobile py-1 text-center hidden" placeholder="Jml">
+                                </div>`;
+                            atkContainer.appendChild(itemDiv);
+                        });
+
+                        // Re-attach event listeners
+                        atkContainer.querySelectorAll('.atk-checkbox').forEach(checkbox => {
+                            checkbox.addEventListener('change', (e) => {
+                                const parentDiv = e.target.closest('.item-row');
+                                const quantityInput = parentDiv.querySelector('.atk-quantity');
+                                const isP3KItem = parentDiv.classList.contains('bg-p3k');
+                                
+                                if (e.target.checked) { 
+                                    quantityInput.classList.remove('hidden'); 
+                                    
+                                    // Highlight saat dipilih
+                                    if(isP3KItem) {
+                                        parentDiv.classList.remove('bg-p3k');
+                                        parentDiv.style.backgroundColor = '#d1fae5'; // Hijau lebih gelap dikit
+                                    } else {
+                                        parentDiv.classList.add('bg-indigo-50');
+                                    }
+                                    
+                                    quantityInput.focus();
+                                } else { 
+                                    quantityInput.classList.add('hidden'); 
+                                    
+                                    // Balikin warna
+                                    if(isP3KItem) {
+                                        parentDiv.style.backgroundColor = ''; // Reset inline style
+                                        parentDiv.classList.add('bg-p3k');
+                                    } else {
+                                        parentDiv.classList.remove('bg-indigo-50'); 
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .withFailureHandler(error => {
+                        atkContainer.innerHTML = `<div class="p-4 text-red-600 text-center"><b>Gagal memuat:</b> ${error.message}</div>`;
+                    })
+                    .getAtkItems();
+            }
+            
+            loadAtkItems();
+
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                notificationError.classList.add('hidden');
+                
+                const email = employeeEmailInput.value.trim();
+                const emailRegex = /\S+@\S+\.\S+/;
+
+                if (employeeNameInput.value.trim() === '' || departmentInput.value.trim() === '' || email === '') {
+                    showNotification('Mohon lengkapi Nama, Email, dan Departemen.', false);
+                    return;
+                }
+                
+                if (!emailRegex.test(email)) {
+                    showNotification('Format email salah. Gunakan format: nama@email.com', false);
                     return;
                 }
 
-                resultContainer.innerHTML = '';
-                requests.forEach(req => {
-                    const card = document.createElement('div');
-                    card.className = 'p-4 border rounded-lg bg-gray-50 mb-4 shadow-sm';
-                    
-                    let statusColor = 'text-gray-500';
-                    let actionButton = '';
-
-                    if (req.status === 'Disetujui') {
-                        statusColor = 'text-green-600 font-semibold';
-                        actionButton = `<button data-row="${req.rowNum}" class="btn-upload-trigger btn-confirm w-full sm:w-auto text-sm font-semibold py-2 px-4 rounded-md transition shadow">Konfirmasi Ambil & Unggah Foto</button>`;
-                    } else if (req.status === 'Ditolak') {
-                        statusColor = 'text-red-600 font-semibold';
-                    } else if (req.status === 'Sudah Diambil') {
-                        statusColor = 'text-blue-600 font-semibold';
-                        actionButton = `<a href="${req.proofLink}" target="_blank" class="inline-block mt-2 sm:mt-0 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline bg-blue-50 px-3 py-1 rounded-md border border-blue-200">Lihat Bukti Foto</a>`;
+                const selectedItems = [];
+                atkContainer.querySelectorAll('.atk-checkbox:checked').forEach(cb => {
+                    const quantityInput = cb.closest('.item-row').querySelector('.atk-quantity');
+                    const qty = parseInt(quantityInput.value);
+                    if(qty > 0) {
+                         selectedItems.push({ name: cb.getAttribute('data-item-name'), quantity: qty });
                     }
-
-                    card.innerHTML = `
-                        <div class="block sm:flex sm:justify-between sm:items-center">
-                            <div class="mb-4 sm:mb-0">
-                                <p class="font-bold text-gray-800">${req.itemName} (Jumlah: ${req.quantity})</p>
-                                <p class="text-sm text-gray-500 mb-1">${new Date(req.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                                <p class="text-sm font-medium ${statusColor}" id="status-text-${req.rowNum}">Status: ${req.status}</p>
-                            </div>
-                            <div id="action-area-${req.rowNum}" class="text-right">
-                                ${actionButton}
-                            </div>
-                        </div>
-                    `;
-                    resultContainer.appendChild(card);
                 });
+
+                if (selectedItems.length === 0) { showNotification('Pilih minimal satu item ATK/P3K.', false); return; }
                 
-                attachUploadListener();
-            }
-
-            function showError(error) {
-                searchBtn.disabled = false;
-                searchBtn.textContent = 'Cari';
-                resultContainer.innerHTML = `<p class="text-center text-red-500 py-8">Terjadi Kesalahan: ${error.message}</p>`;
-            }
-            
-            function attachUploadListener() {
-                document.querySelectorAll('.btn-upload-trigger').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const rowNum = e.currentTarget.dataset.row;
-                        currentRowNum = rowNum;
-                        fileInput.value = null; 
-                        fileInput.click(); 
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<div class="spinner"></div> Mengirim...';
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showNotification(response.message, response.success);
+                        if (response.success) { form.reset(); searchInput.value = ''; loadAtkItems(); }
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Kirim Permintaan';
+                    })
+                    .withFailureHandler(error => {
+                        showNotification(`Terjadi kesalahan: ${error.message}`, false);
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Kirim Permintaan';
+                    })
+                    .submitRequest({ 
+                        employeeName: employeeNameInput.value, 
+                        employeeEmail: email, 
+                        department: departmentInput.value, 
+                        requestedItems: selectedItems 
                     });
-                });
-            }
-
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file || !currentRowNum) return;
-
-                const actionArea = document.getElementById(`action-area-${currentRowNum}`);
-                const originalButtonHTML = actionArea.innerHTML;
-
-                actionArea.innerHTML = `<div class="flex items-center justify-end text-indigo-600 font-medium"><div class="spinner !border-2 !w-5 !h-5 mr-2"></div>Mengunggah...</div>`;
-
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const fileData = {
-                        base64Data: reader.result,
-                        fileName: `bukti_ambil_${currentRowNum}_${Date.now()}.png`,
-                        mimeType: file.type
-                    };
-                    google.script.run
-                        .withSuccessHandler(onConfirmSuccess)
-                        .withFailureHandler(onConfirmError)
-                        .confirmPickupWithPhoto(fileData, currentRowNum);
-                };
-                reader.onerror = (error) => {
-                    alert('Gagal membaca file: ' + error);
-                    actionArea.innerHTML = originalButtonHTML;
-                };
             });
-
-            function onConfirmSuccess(response) {
-                if (response.success) {
-                    const rowNum = currentRowNum;
-                    const actionArea = document.getElementById(`action-area-${rowNum}`);
-                    const statusText = document.getElementById(`status-text-${rowNum}`);
-                    
-                    actionArea.innerHTML = `<a href="${response.proofLink}" target="_blank" class="inline-block mt-2 sm:mt-0 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline bg-blue-50 px-3 py-1 rounded-md border border-blue-200">Lihat Bukti Foto</a>`;
-                    statusText.textContent = `Status: ${response.newStatus}`;
-                    statusText.className = 'text-sm font-medium text-blue-600 font-semibold';
-                    currentRowNum = null;
-                } else {
-                    onConfirmError(response);
-                }
-            }
-
-            function onConfirmError(error) {
-                alert("Gagal mengunggah: " + error.message);
-                searchForm.dispatchEvent(new Event('submit')); 
-            }
         });
     </script>
 </body>
