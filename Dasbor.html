@@ -18,20 +18,17 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         .menu-active { background-color: #1e293b; border-left-width: 4px; border-color: #3b82f6; color: white; }
         .menu-inactive { color: #94a3b8; border-left-width: 4px; border-color: transparent; }
         .menu-inactive:hover { background-color: #334155; color: white; }
         
-        /* Layar penutup sementara saat proses verifikasi keamanan berjalan */
         #security-curtain { position: fixed; inset: 0; background: #f8f9fa; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="bg-[#f8f9fa] font-sans text-slate-800 antialiased overflow-hidden">
 
-    <!-- PROTEKSI AWAL: Layar akan putih loading sampai dipastikan yang login benar-benar Admin -->
+    <!-- PROTEKSI AWAL -->
     <div id="security-curtain">
         <div class="spinner"></div>
         <p class="mt-4 text-slate-500 font-bold tracking-widest text-sm uppercase">Memverifikasi Otoritas Akses...</p>
@@ -95,7 +92,7 @@
                             <p class="text-sm font-bold text-slate-800 leading-tight" id="adminName">Administrator</p>
                             <p class="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Super User</p>
                         </div>
-                        <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-lg shadow-sm border-2 border-slate-200"><i class="ph-fill ph-user"></i></div>
+                        <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-lg shadow-sm border-2 border-slate-200"><i class="ph-fill ph-shield-check"></i></div>
                     </div>
                 </div>
             </header>
@@ -155,7 +152,7 @@
                     </div>
                 </div>
 
-                <!-- TAB INFO WEB & KALENDER (KALENDER ALA GOOGLE CALENDAR) -->
+                <!-- TAB INFO WEB & KALENDER (KALENDER FLEKSIBEL) -->
                 <div id="content-info" class="hidden fade-in max-w-7xl mx-auto space-y-6">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
@@ -193,7 +190,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex flex-col flex-grow bg-slate-50 p-4 overflow-visible">
+                            <div class="flex flex-col flex-grow bg-slate-50 p-4">
                                 <!-- Grid Hari -->
                                 <div class="grid grid-cols-7 border-l border-t border-slate-200 bg-slate-100 rounded-t-xl overflow-hidden">
                                     <div class="text-center py-2 text-xs font-bold uppercase tracking-wider text-red-500 border-r border-b border-slate-200">Mg</div>
@@ -206,7 +203,7 @@
                                 </div>
                                 
                                 <!-- Grid Tanggal -->
-                                <div id="admin-cal-grid" class="grid grid-cols-7 border-l border-slate-200 flex-grow bg-white rounded-b-xl overflow-hidden shadow-inner">
+                                <div id="admin-cal-grid" class="grid grid-cols-7 border-l border-slate-200 flex-grow bg-white rounded-b-xl shadow-inner">
                                     <!-- Rendered via JS -->
                                 </div>
                             </div>
@@ -384,7 +381,7 @@
             }
 
             // =========================================================
-            // PENGUMUMAN & KALENDER LIBUR ADMIN (GOOGLE CALENDAR STYLE)
+            // PENGUMUMAN & KALENDER LIBUR ADMIN (VIEW LIST RAPI)
             // =========================================================
             window.loadInfoData = function() {
                 renderLoading('admin-pengumuman-list');
@@ -450,18 +447,19 @@
                         let isCuti = libur.status.toLowerCase().includes('cuti');
                         let bgEv = isCuti ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-red-100 text-red-600 border border-red-200';
                         
-                        eventHtml += `<div class="mt-1 text-[10px] md:text-[11px] leading-tight font-bold ${bgEv} rounded px-1.5 py-1 line-clamp-2 md:line-clamp-3 hover:opacity-80 transition" onclick="event.stopPropagation(); hapusL(${libur.rowNum})" title="Klik untuk Hapus: ${libur.nama}">${libur.nama}</div>`;
+                        eventHtml += `<div class="mt-1 text-[10px] md:text-[11px] leading-tight font-bold ${bgEv} rounded px-1.5 py-1 hover:opacity-80 transition" onclick="event.stopPropagation(); hapusL(${libur.rowNum})" title="Klik untuk Hapus: ${libur.nama}">${libur.nama}</div>`;
                     });
                     
                     let dateStr = `${currentCalYear}-${String(currentCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
+                    // REVISI PENTING: Menghilangkan batasan container agar kotak fleksibel 
                     grid.innerHTML += `
-                        <div class="min-h-[80px] md:min-h-[100px] p-1 md:p-2 border-r border-b ${cellBorder} ${cellBg} relative cursor-pointer transition-all duration-200 hover:bg-slate-50 flex flex-col group" onclick="openAddLiburModal('${dateStr}')">
+                        <div class="min-h-[100px] p-1 md:p-2 border-r border-b ${cellBorder} ${cellBg} relative cursor-pointer transition-all duration-200 hover:bg-slate-50 flex flex-col group pb-6" onclick="openAddLiburModal('${dateStr}')">
                             <div class="w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold mx-auto mb-1 flex-shrink-0 ${numColor}">${d}</div>
-                            <div class="flex-grow flex flex-col gap-1 overflow-y-auto no-scrollbar pb-6">
+                            <div class="flex flex-col gap-1 w-full">
                                 ${eventHtml}
                             </div>
-                            <div class="text-center opacity-0 group-hover:opacity-100 absolute bottom-1 right-2 bg-white/80 rounded-full backdrop-blur-sm">
+                            <div class="text-center opacity-0 group-hover:opacity-100 absolute bottom-1 right-0 left-0">
                                 <i class="ph-bold ph-plus-circle text-blue-400 text-lg drop-shadow"></i>
                             </div>
                         </div>
