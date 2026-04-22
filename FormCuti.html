@@ -56,15 +56,21 @@
       </div>
 
       <div class="section-title">B. Detail Pengajuan Cuti</div>
-      <div class="mb-3">
-        <label class="form-label">Jenis Cuti</label>
-        <select class="form-select" name="jenis_cuti" required>
-          <option value="" selected disabled>-- Pilih Jenis Cuti --</option>
-          <option value="Cuti Tahunan">Cuti Tahunan</option>
-          <option value="Cuti Hamil/Melahirkan">Cuti Hamil/Melahirkan</option>
-          <option value="Cuti Menikah">Cuti Menikah</option>
-          <option value="Lain-lain">Lain - lain</option>
-        </select>
+      <div class="row mb-3 g-3">
+        <div class="col-md-6">
+          <label class="form-label">Jenis Cuti</label>
+          <select class="form-select" name="jenis_cuti" id="jenisCutiSelect" onchange="toggleKeterangan()" required>
+            <option value="" selected disabled>-- Pilih Jenis Cuti --</option>
+            <option value="Cuti Tahunan">Cuti Tahunan</option>
+            <option value="Cuti Hamil/Melahirkan">Cuti Hamil/Melahirkan</option>
+            <option value="Cuti Menikah">Cuti Menikah</option>
+            <option value="Lain-lain">Lain - lain</option>
+          </select>
+        </div>
+        <div class="col-md-6" id="keteranganContainer" style="display: none;">
+          <label class="form-label text-primary">Keterangan (Harus diisi)</label>
+          <input type="text" class="form-control border-primary" name="keterangan" id="keteranganInput" placeholder="Sebutkan detail keperluan...">
+        </div>
       </div>
 
       <div class="row mb-3 g-3">
@@ -116,6 +122,20 @@
 </div>
 
 <script>
+  function toggleKeterangan() {
+    const jenis = document.getElementById('jenisCutiSelect').value;
+    const container = document.getElementById('keteranganContainer');
+    const input = document.getElementById('keteranganInput');
+    if(jenis === 'Lain-lain') {
+        container.style.display = 'block';
+        input.required = true;
+    } else {
+        container.style.display = 'none';
+        input.required = false;
+        input.value = '';
+    }
+  }
+
   // Script untuk menghitung durasi cuti secara otomatis
   function hitungLamaCuti() {
     const tglMulai = document.getElementById('tglMulai').value;

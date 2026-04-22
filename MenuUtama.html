@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <base target="_top">
     <meta charset="UTF-8">
@@ -7,230 +8,580 @@
     <title>Dashboard Karyawan - HRIS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
-        
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { border: 3px solid rgba(0,0,0,.1); border-left-color: #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px;}
-        .spinner-white { border-left-color: #ffffff; }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
 
-        .input-custom { width: 100%; padding: 0.6rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background-color: white; transition: all 0.2s; outline: none;}
-        .input-custom:focus { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
-        .input-custom:disabled, .input-custom[readonly] { background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; }
-        
-        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid #e5e7eb; transition: background-color 0.2s; }
-        .item-row:last-child { border-bottom: none; }
-        .bg-p3k { background-color: #f0fdf4; border-left: 4px solid #22c55e; }
-        .hidden-by-search { display: none !important; }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
 
-        .menu-active { background-color: #4338ca; border-left-width: 4px; border-color: #818cf8; color: white; }
-        .menu-inactive { color: #e0e7ff; border-left-width: 4px; border-color: transparent; }
-        .menu-inactive:hover { background-color: #4f46e5; border-color: #6366f1; color: white; }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7cc;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1aa;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, .1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        .spinner-white {
+            border-left-color: #ffffff;
+        }
+
+        .input-custom {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background-color: white;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .input-custom:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        .input-custom:disabled,
+        .input-custom[readonly] {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .bg-p3k {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+
+        .hidden-by-search {
+            display: none !important;
+        }
+
+        .menu-active {
+            background-color: #4338ca;
+            border-left-width: 4px;
+            border-color: #818cf8;
+            color: white;
+        }
+
+        .menu-inactive {
+            color: #e0e7ff;
+            border-left-width: 4px;
+            border-color: transparent;
+        }
+
+        .menu-inactive:hover {
+            background-color: #4f46e5;
+            border-color: #6366f1;
+            color: white;
+        }
+
+        /* Kustomisasi Background Landing Page */
         .landing-bg {
             background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
         }
 
+        /* Efek Kaca untuk Card Landing Page */
         .glass-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-
-        /* GRID KALENDER PENUH */
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
-        .cal-day { padding: 4px 0; border-radius: 4px; font-size: 0.85rem; }
     </style>
 </head>
+
 <body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-hidden">
 
     <!-- 0. TAB LANDING PAGE (FULL SCREEN) -->
     <div id="content-home" class="fade-in fixed inset-0 z-50 flex items-center justify-center landing-bg">
         <div class="absolute inset-0 bg-slate-900/60"></div>
-        <div class="relative z-10 glass-card p-10 md:p-14 rounded-3xl shadow-2xl text-center max-w-2xl w-[90%] transform transition duration-700 hover:scale-[1.02]">
-            <div class="w-32 h-32 mx-auto bg-white rounded-full flex items-center justify-center shadow-inner mb-6 border-4 border-indigo-300 cursor-pointer hover:bg-slate-50 transition" onclick="switchTab('profil')" title="Buka Profil Saya">
-                <span id="landingAvatar" class="text-6xl font-black text-indigo-600 tracking-tighter"></span>
+
+        <div
+            class="relative z-10 glass-card p-10 md:p-14 rounded-3xl shadow-2xl text-center max-w-2xl w-[90%] transform transition duration-700 hover:scale-[1.02]">
+            <!-- PREMIUM BRANDING AREA -->
+            <div id="landing-brand-area" class="hidden mb-10 flex flex-col items-center justify-center gap-3">
+                <div
+                    class="h-20 w-20 flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm p-3 shadow-xl border border-white/50 transform transition-transform hover:scale-110">
+                    <img id="landing-logo" src="" class="h-full w-full object-contain" alt="Logo">
+                </div>
+                <h2 id="landing-pt-name"
+                    class="text-sm font-black tracking-[0.3em] text-white drop-shadow-lg uppercase text-center max-w-md antialiased">
+                </h2>
             </div>
-            <p class="text-indigo-200 text-lg md:text-xl font-medium tracking-widest uppercase mb-2">Selamat Datang di Portal HRIS</p>
+
+            <p class="text-indigo-200 text-lg md:text-xl font-medium tracking-widest uppercase mb-2">Selamat Datang di
+                Portal HRIS</p>
             <h1 id="landingGreeting" class="text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-md"></h1>
+
             <div class="h-px w-24 bg-indigo-400 mx-auto my-6 opacity-50"></div>
-            <p class="text-white/90 text-base md:text-lg font-light italic mb-10">"Waktunya merencanakan liburan Anda atau penuhi kebutuhan logistik dengan mudah."</p>
-            <button onclick="switchTab('dashboard')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-indigo-500/50 flex items-center mx-auto text-lg border border-indigo-400">
+
+            <p class="text-white/90 text-base md:text-lg font-light italic mb-10">"Semoga hari Anda penuh energi dan semangat yang produktif"</p>
+
+            <button onclick="switchTab('dashboard')"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-indigo-500/50 flex items-center mx-auto text-lg border border-indigo-400">
                 Masuk ke Dasbor Utama <i class="ph-bold ph-sign-in ml-3 text-xl"></i>
             </button>
         </div>
     </div>
 
-    <!-- WRAPPER UTAMA -->
-    <div id="app-layout" class="hidden flex h-screen w-full">
+    <!-- WRAPPER UTAMA UNTUK KONTEN APLIKASI (SELAIN LANDING PAGE) -->
+    <div id="app-layout" class="hidden flex h-screen w-full relative">
+        <!-- BACKDROP SIDEBAR (MOBILE) -->
+        <div id="sidebar-backdrop" onclick="toggleSidebar()"
+            class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-sm transition-opacity duration-300">
+        </div>
+
         <!-- SIDEBAR -->
-        <aside class="hidden md:flex flex-col w-64 bg-indigo-800 text-white transition-all duration-300 shadow-xl z-20">
-            <div class="flex items-center justify-center h-16 border-b border-indigo-700">
-                <i class="ph-fill ph-buildings text-3xl mr-2 text-indigo-300"></i>
-                <h1 class="text-xl font-bold tracking-wider">PORTAL HRIS</h1>
+        <aside id="sidebar-user"
+            class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-800 text-white transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:flex flex-col shadow-xl">
+            <div
+                class="flex flex-col items-center justify-center py-4 border-b border-indigo-700 w-full overflow-hidden">
+                <div class="flex items-center justify-center mb-1">
+                    <i class="ph-fill ph-buildings text-3xl mr-2 text-indigo-300" id="sidebar-logo-icon"></i>
+                    <div id="sidebar-logo-container"
+                        class="hidden bg-white p-1.5 rounded-lg shadow-sm mr-2 flex items-center justify-center">
+                        <img id="sidebar-pt-logo" src="" class="h-6 max-w-[100px] object-contain" alt="Logo PT">
+                    </div>
+                </div>
+                <h1 class="text-xl font-bold tracking-wider truncate px-2 text-center" id="sidebar-pt-name">PORTAL HRIS
+                </h1>
             </div>
             <div class="overflow-y-auto overflow-x-hidden flex-grow">
                 <ul class="flex flex-col py-4 space-y-1">
-                    <li class="px-5"><div class="flex flex-row items-center h-8 text-xs font-bold tracking-wider text-indigo-300 uppercase">Menu Utama</div></li>
-                    <li><button onclick="switchTab('home')" id="menu-home" class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span class="inline-flex justify-center items-center ml-4"><i class="ph ph-house text-xl"></i></span><span class="ml-3 text-sm font-medium tracking-wide truncate">Beranda</span></button></li>
-                    <li><button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-active pr-6"><span class="inline-flex justify-center items-center ml-4"><i class="ph ph-squares-four text-xl"></i></span><span class="ml-3 text-sm font-medium tracking-wide truncate">Dashboard</span></button></li>
-                    <li><button onclick="switchTab('cuti')" id="menu-cuti" class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span class="inline-flex justify-center items-center ml-4"><i class="ph ph-calendar-blank text-xl"></i></span><span class="ml-3 text-sm font-medium tracking-wide truncate">Pengajuan Cuti</span></button></li>
-                    <li><button onclick="switchTab('atk')" id="menu-atk" class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span class="inline-flex justify-center items-center ml-4"><i class="ph ph-package text-xl"></i></span><span class="ml-3 text-sm font-medium tracking-wide truncate">Permintaan Barang</span></button></li>
-                    <li><button onclick="switchTab('riwayat')" id="menu-riwayat" class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span class="inline-flex justify-center items-center ml-4"><i class="ph ph-clock-counter-clockwise text-xl"></i></span><span class="ml-3 text-sm font-medium tracking-wide truncate">Riwayat & Status</span></button></li>
+                    <li class="px-5">
+                        <div
+                            class="flex flex-row items-center h-8 text-xs font-bold tracking-wider text-indigo-300 uppercase">
+                            Menu Utama</div>
+                    </li>
+                    <li><button onclick="switchTab('home')" id="menu-home"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-house text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Beranda</span></button></li>
+                    <li><button onclick="switchTab('dashboard')" id="menu-dashboard"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-active pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-squares-four text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Dashboard</span></button></li>
+                    <li><button onclick="switchTab('cuti')" id="menu-cuti"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-calendar-blank text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Pengajuan Cuti</span></button>
+                    </li>
+                    <li><button onclick="switchTab('atk')" id="menu-atk"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-package text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Permintaan
+                                Barang</span></button></li>
+                    <li><button onclick="switchTab('riwayat')" id="menu-riwayat"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-clock-counter-clockwise text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Riwayat & Status</span></button>
+                    </li>
                 </ul>
             </div>
-            <div class="p-4 border-t border-indigo-700 bg-indigo-900/30">
-                <button onclick="logout()" class="flex items-center justify-center w-full px-4 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors shadow-sm"><i class="ph ph-sign-out text-lg mr-2"></i> Keluar Sistem</button>
+            <div class="border-t border-indigo-700 p-4 bg-indigo-900/30">
+                <button id="btn-admin-switch" onclick="window.top.location.href='<?= getScriptUrl() ?>?page=admin'"
+                    class="hidden flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-indigo-200 hover:text-white hover:bg-indigo-700 rounded-lg transition-colors shadow-sm mb-2"><i
+                        class="ph-bold ph-shield-check text-lg mr-2"></i> Dasbor Admin</button>
+                <button onclick="logout()"
+                    class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors shadow-sm"><i
+                        class="ph ph-sign-out text-lg mr-2"></i> Keluar</button>
             </div>
         </aside>
 
         <!-- MAIN CONTENT -->
         <div class="flex flex-col flex-1 w-full overflow-hidden">
             <!-- HEADER -->
-            <header class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm z-10">
+            <header
+                class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm z-10">
                 <div class="flex items-center">
-                    <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none mr-4"><i class="ph ph-list text-2xl"></i></button>
-                    <h2 class="text-xl font-bold text-gray-800" id="header-title">Dashboard</h2>
+                    <button id="mobile-menu-btn" onclick="toggleSidebar()"
+                        class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none mr-4"><i
+                            class="ph ph-list text-2xl"></i></button>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800" id="header-title">Dashboard</h2>
+                        <div id="dashboard-pt-name" class="text-sm font-medium text-gray-500 truncate max-w-xs"></div>
+                    </div>
                 </div>
-                <!-- PROFIL TRIGGER VIA AVATAR -->
-                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition" onclick="switchTab('profil')" title="Lihat Profil">
+                <div class="flex items-center gap-3">
+                    <!-- NOTIFICATION BELL -->
+                    <div class="relative mr-2">
+                        <button onclick="showNotifications()"
+                            class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all relative">
+                            <i class="ph ph-bell text-2xl"></i>
+                            <span id="notif-badge"
+                                class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full hidden"></span>
+                        </button>
+                    </div>
                     <div class="text-right hidden sm:block">
                         <p class="text-sm font-bold text-gray-700" id="userNameHeader">Karyawan</p>
                         <p class="text-xs text-gray-500" id="userDivisiHeader">Divisi</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg border border-indigo-200 shadow-sm" id="userAvatar">K</div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg border border-indigo-200 cursor-pointer hover:ring-2 hover:ring-indigo-400 hover:bg-indigo-200 transition-all shadow-sm"
+                        id="userAvatar" onclick="switchTab('profil')" title="Lihat Profil">K</div>
                 </div>
             </header>
 
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8 relative h-full">
-                
+
                 <!-- 1. TAB DASHBOARD -->
-                <div id="content-dashboard" class="hidden fade-in max-w-5xl mx-auto space-y-6">
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between">
-                        <div><h3 class="text-lg font-bold text-gray-800 mb-1" id="welcomeTitle">Halo, Selamat Bekerja!</h3><p class="text-sm text-gray-500">Gunakan portal ini untuk mengelola pengajuan cuti dan kebutuhan logistik Anda secara terpusat.</p></div>
-                        <div class="mt-4 sm:mt-0"><span id="roleBadge" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200 uppercase tracking-wide">Karyawan</span></div>
+                <div id="content-dashboard" class="hidden fade-in max-w-6xl mx-auto space-y-6">
+                    <div
+                        class="bg-gradient-to-r from-indigo-800 to-purple-900 rounded-2xl p-6 shadow-lg border border-indigo-700 flex flex-col sm:flex-row items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-white mb-1">Selamat Bekerja!</h3>
+                            <p class="text-sm text-indigo-200">Gunakan portal ini untuk mengelola pengajuan cuti dan
+                                kebutuhan logistik Anda secara terpusat.</p>
+                        </div>
+                        <div class="mt-4 sm:mt-0"><span id="roleBadge"
+                                class="bg-indigo-300/30 text-white text-xs font-bold px-3 py-1 rounded-full border border-indigo-400/50 uppercase tracking-wide">Karyawan</span>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow cursor-pointer" onclick="switchTab('profil')"><div class="p-4 rounded-xl bg-blue-50 text-blue-600 mr-4"><i class="ph-fill ph-calendar-check text-3xl"></i></div><div><p class="text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Sisa Cuti</p><p class="text-3xl font-black text-gray-800"><span id="sisaCutiAngka"><span class="animate-pulse bg-gray-200 text-transparent rounded">00</span></span> <span class="text-sm font-bold text-gray-500">Hari</span></p></div></div>
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow cursor-pointer" onclick="switchTab('riwayat')"><div class="p-4 rounded-xl bg-orange-50 text-orange-500 mr-4"><i class="ph-fill ph-package text-3xl"></i></div><div><p class="text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Status Barang</p><p class="text-xl font-black text-indigo-600 hover:underline">Lacak Pesanan &rarr;</p></div></div>
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow"><div class="p-4 rounded-xl bg-green-50 text-green-600 mr-4"><i class="ph-fill ph-buildings text-3xl"></i></div><div><p class="text-sm font-bold text-gray-500 mb-1 uppercase tracking-wider">Lokasi</p><p class="text-lg font-bold text-gray-800" id="userCabang">Kantor Pusat</p></div></div>
-                    </div>
-                    
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 mt-8 flex items-center"><i class="ph-fill ph-lightning text-amber-500 mr-2"></i> Akses Cepat</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:border-indigo-300 transition-all group cursor-pointer" onclick="switchTab('cuti')">
-                            <div class="p-6"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><i class="ph-fill ph-airplane-tilt text-2xl"></i></div><i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i></div><h4 class="text-lg font-bold text-gray-800 mb-2">Formulir Cuti (HRD-007)</h4><p class="text-sm text-gray-500">Ajukan cuti tahunan, cuti sakit, melahirkan, atau izin keperluan khusus lainnya.</p></div>
-                            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100"><span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Isi Formulir Cuti</span></div>
+                        <div class="bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl p-6 shadow-lg border border-emerald-400 bg-opacity-90 flex items-center hover:shadow-xl hover:scale-[1.02] transform transition-all cursor-pointer text-white"
+                            onclick="switchTab('profil')">
+                            <div
+                                class="w-14 h-14 flex items-center justify-center rounded-xl bg-white/20 mr-4 shadow-inner">
+                                <i class="ph-fill ph-calendar-check text-3xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-emerald-50 mb-1 uppercase tracking-wider">Hak Cuti</p>
+                                <p class="text-3xl font-black text-white"><span id="sisaCutiAngka"><span
+                                            class="animate-pulse bg-white/30 text-transparent rounded">00</span></span>
+                                    <span class="text-sm font-bold text-emerald-100">Hari</span>
+                                </p>
+                            </div>
                         </div>
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:border-blue-300 transition-all group cursor-pointer" onclick="switchTab('atk')">
-                            <div class="p-6"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><i class="ph ph-archive text-2xl"></i></div><i class="ph-bold ph-arrow-right text-gray-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all"></i></div><h4 class="text-lg font-bold text-gray-800 mb-2">Formulir Pembelian Barang</h4><p class="text-sm text-gray-500">Ajukan permohonan pembelian logistik, ATK, atau barang non-stock lainnya ke GA.</p></div>
-                            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100"><span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Isi Formulir Barang</span></div>
+                        <div class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-6 shadow-lg border border-amber-400 bg-opacity-90 flex items-center hover:shadow-xl hover:scale-[1.02] transform transition-all cursor-pointer text-white"
+                            onclick="switchTab('riwayat')">
+                            <div
+                                class="w-14 h-14 flex items-center justify-center rounded-xl bg-white/20 mr-4 shadow-inner">
+                                <i class="ph-fill ph-package text-3xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-orange-50 mb-1 uppercase tracking-wider">Status Barang
+                                </p>
+                                <p class="text-xl font-black text-white hover:underline mt-1">Lacak Pesanan &rarr;</p>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl p-6 shadow-lg border border-indigo-500 bg-opacity-90 flex items-center hover:shadow-xl hover:scale-[1.02] transform transition-all text-white">
+                            <div
+                                class="w-14 h-14 flex items-center justify-center rounded-xl bg-white/20 mr-4 shadow-inner">
+                                <i class="ph-fill ph-buildings text-3xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-indigo-100 mb-1 uppercase tracking-wider">Lokasi</p>
+                                <p class="text-lg font-bold text-white mt-1" id="userCabang">Kantor Pusat</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- FITUR PENGUMUMAN & KALENDER LIBUR -->
+                    <!-- ========================================================================= -->
+                    <!-- FITUR BARU: PENGUMUMAN & KALENDER LIBUR (DYNAMIC) -->
+                    <!-- ========================================================================= -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                            <div class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
-                                <div class="flex items-center"><i class="ph-fill ph-megaphone text-indigo-500 text-2xl mr-3"></i><h2 class="text-lg font-bold text-indigo-900">Pengumuman Internal</h2></div>
+
+                        <!-- Papan Pengumuman Internal -->
+                        <div
+                            class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-sm border border-indigo-100 overflow-hidden flex flex-col">
+                            <div
+                                class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="ph-fill ph-megaphone text-indigo-500 text-2xl mr-3"></i>
+                                    <h2 class="text-lg font-bold text-indigo-900">Pengumuman Internal</h2>
+                                </div>
                             </div>
                             <div class="p-6 flex-grow">
                                 <ul class="space-y-5" id="pengumuman-list">
-                                    <div class="flex justify-center py-8"><div class="spinner border-indigo-600"></div></div>
+                                    <div class="flex justify-center py-8">
+                                        <div class="spinner border-indigo-600"></div>
+                                    </div>
                                 </ul>
                             </div>
                         </div>
 
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                            <div class="bg-rose-50 px-6 py-4 border-b border-rose-100 flex items-center justify-between">
-                                <div class="flex items-center"><i class="ph-fill ph-calendar-star text-rose-500 text-2xl mr-3"></i><h2 class="text-lg font-bold text-rose-900">Kalender Libur & Cuti Bersama</h2></div>
+                        <!-- Kalender Libur Nasional -->
+                        <div
+                            class="bg-gradient-to-br from-rose-50 to-orange-50 rounded-2xl shadow-sm border border-rose-100 overflow-hidden flex flex-col">
+                            <div
+                                class="bg-rose-50 px-6 py-4 border-b border-rose-100 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="ph-fill ph-calendar-star text-rose-500 text-2xl"></i>
+                                    <h2 class="text-lg font-bold text-rose-900">Kalender Libur</h2>
+                                    <!-- Toggle Agenda / Bulan -->
+                                    <div
+                                        class="flex rounded-xl bg-white border border-rose-200 shadow-sm overflow-hidden ml-2">
+                                        <button id="emp-btn-agenda" onclick="switchEmpCalView('agenda')"
+                                            class="px-3 py-1.5 text-xs font-bold transition-all bg-rose-600 text-white"><i
+                                                class="ph-bold ph-list-checks mr-1"></i>Agenda</button>
+                                        <button id="emp-btn-bulan" onclick="switchEmpCalView('bulan')"
+                                            class="px-3 py-1.5 text-xs font-bold transition-all text-rose-600 hover:bg-rose-50"><i
+                                                class="ph-bold ph-calendar-blank mr-1"></i>Bulan</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="p-6 flex-grow flex flex-col">
-                                <ul class="space-y-4 flex-grow mb-4" id="libur-list">
-                                    <div class="flex justify-center py-8"><div class="spinner border-rose-600"></div></div>
-                                </ul>
-                                <button onclick="openFullCalendar()" class="w-full bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold py-2 rounded-xl transition shadow-sm flex justify-center items-center">
-                                    <i class="ph-bold ph-calendar text-lg mr-2"></i> Lihat Kalender Keseluruhan Tahun Ini
-                                </button>
+                            <div class="p-6 flex-grow">
+                                <!-- Agenda View (Default) -->
+                                <div id="emp-agenda-wrapper">
+                                    <ul class="space-y-4" id="libur-list">
+                                        <div class="flex justify-center py-8">
+                                            <div class="spinner border-rose-600"></div>
+                                        </div>
+                                    </ul>
+                                </div>
+                                <!-- Full Month Grid View (Hidden) -->
+                                <div id="emp-month-wrapper" class="hidden">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <button onclick="empPrevMonth()"
+                                            class="bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 w-9 h-9 rounded-xl flex items-center justify-center shadow-sm transition"><i
+                                                class="ph-bold ph-caret-left"></i></button>
+                                        <h3 id="emp-month-title"
+                                            class="text-base font-black text-slate-800 uppercase tracking-wide"></h3>
+                                        <div class="flex gap-2">
+                                            <button onclick="empGoToday()"
+                                                class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">Hari
+                                                Ini</button>
+                                            <button onclick="empNextMonth()"
+                                                class="bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 w-9 h-9 rounded-xl flex items-center justify-center shadow-sm transition"><i
+                                                    class="ph-bold ph-caret-right"></i></button>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="grid grid-cols-7 gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-rose-600 uppercase">
+                                            Min</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Sen</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Sel</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Rab</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Kam</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Jum</div>
+                                        <div
+                                            class="bg-slate-100 text-center py-1.5 text-[10px] font-black text-slate-600 uppercase">
+                                            Sab</div>
+                                    </div>
+                                    <div id="emp-month-grid"
+                                        class="grid grid-cols-7 gap-px bg-slate-200 rounded-b-xl overflow-hidden border-x border-b border-slate-200">
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
                 <!-- 2. TAB FORM CUTI -->
                 <div id="content-cuti" class="hidden fade-in max-w-3xl mx-auto">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="bg-indigo-600 p-6 text-white text-center"><h2 class="text-2xl font-bold">Formulir Pengajuan Cuti</h2><p class="text-indigo-200 text-sm mt-1">Kode Form: HRD-007</p></div>
+                    <div
+                        class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                        <div class="bg-indigo-600 p-6 text-white text-center">
+                            <h2 class="text-2xl font-bold">Formulir Pengajuan Cuti</h2>
+                            <p class="text-indigo-200 text-sm mt-1">Kode Form: HRD-007</p>
+                        </div>
                         <div id="form-cuti-app" class="p-6 sm:p-8 space-y-6">
                             <div>
-                                <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">A. Data Pemohon</h3>
+                                <h3
+                                    class="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    A. Data Pemohon</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama Lengkap</label><input type="text" id="cuti-nama" name="nama" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Jabatan</label><input type="text" id="cuti-jabatan" name="jabatan" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Divisi</label><input type="text" id="cuti-divisi" name="divisi" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Penempatan (Lokasi)</label><input type="text" name="penempatan" class="input-custom" placeholder="Contoh: Kantor Pusat / Cabang A"></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama
+                                            Lengkap</label><input type="text" id="cuti-nama" name="nama"
+                                            class="input-custom bg-gray-50 font-semibold" readonly></div>
+                                    <div><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase">Jabatan</label><input
+                                            type="text" id="cuti-jabatan" name="jabatan"
+                                            class="input-custom bg-gray-50 font-semibold" readonly></div>
+                                    <div><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase">Divisi</label><input
+                                            type="text" id="cuti-divisi" name="divisi"
+                                            class="input-custom bg-gray-50 font-semibold" readonly></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Penempatan
+                                            (Lokasi)</label><input type="text" name="penempatan" class="input-custom"
+                                            placeholder="Contoh: Kantor Pusat / Cabang A"></div>
                                 </div>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">B. Rincian Cuti</h3>
+                                <h3
+                                    class="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    B. Rincian Cuti</h3>
                                 <div class="space-y-4">
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Jenis Cuti</label><select name="jenis_cuti" class="input-custom appearance-none"><option value="" disabled selected>-- Pilih Jenis Cuti --</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Hamil/Melahirkan">Cuti Hamil/Melahirkan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Lain-lain">Lain - lain</option></select></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Jenis
+                                            Cuti</label><select id="cuti-jenis" name="jenis_cuti"
+                                            class="input-custom appearance-none" onchange="toggleKeteranganMenu()">
+                                            <option value="" disabled selected>-- Pilih Jenis Cuti --</option>
+                                            <option value="Cuti Tahunan">Cuti Tahunan</option>
+                                            <option value="Cuti Hamil/Melahirkan">Cuti Hamil/Melahirkan</option>
+                                            <option value="Cuti Menikah">Cuti Menikah</option>
+                                            <option value="Lain-lain">Lain - lain</option>
+                                        </select></div>
+                                    <div id="keterangan-container" class="hidden"><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase text-indigo-600">Keterangan
+                                            (Harus diisi)</label><input type="text" id="cuti-keterangan"
+                                            name="keterangan" class="input-custom border-indigo-300 bg-indigo-50"
+                                            placeholder="Tuliskan keterangan detail cuti Anda"></div>
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Tanggal Mulai</label><input type="date" id="cuti-tgl-mulai" name="tanggal_mulai" class="input-custom" onchange="hitungLamaCuti()"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Tanggal Selesai</label><input type="date" id="cuti-tgl-selesai" name="tanggal_selesai" class="input-custom" onchange="hitungLamaCuti()"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Durasi (Hari)</label><input type="number" id="cuti-lama" name="lama_cuti" class="input-custom bg-indigo-50 font-black text-indigo-700" placeholder="0" readonly></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Tanggal
+                                                Mulai</label><input type="date" id="cuti-tgl-mulai" name="tanggal_mulai"
+                                                class="input-custom" onchange="hitungLamaCuti()"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Tanggal
+                                                Selesai</label><input type="date" id="cuti-tgl-selesai"
+                                                name="tanggal_selesai" class="input-custom" onchange="hitungLamaCuti()">
+                                        </div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Durasi
+                                                (Hari)</label><input type="number" id="cuti-lama" name="lama_cuti"
+                                                class="input-custom bg-indigo-50 font-black text-indigo-700"
+                                                placeholder="0" readonly></div>
                                     </div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Alamat Selama Cuti</label><textarea name="alamat_cuti" rows="2" class="input-custom" placeholder="Tuliskan alamat lengkap..."></textarea></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">ALAMAT
+                                            SELAMA CUTI:</label><textarea name="alamat_cuti" rows="2"
+                                            class="input-custom" placeholder="Tuliskan alamat lengkap..."></textarea>
+                                    </div>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">No. HP Darurat</label><input type="tel" name="no_hp" class="input-custom" placeholder="0812xxxxxx"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Karyawan Pengganti</label><input type="text" name="pengganti" class="input-custom" placeholder="(Opsional)"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">No. HP
+                                                Darurat</label><input type="tel" name="no_hp" class="input-custom"
+                                                placeholder="0812xxxxxx"></div>
+                                        <div><label
+                                                class="block text-xs font-bold text-gray-500 mb-1 uppercase">Karyawan
+                                                Pengganti</label><input type="text" name="pengganti"
+                                                class="input-custom" placeholder="(Opsional)"></div>
                                     </div>
                                 </div>
                             </div>
-                            <div id="alert-cuti" class="hidden p-4 rounded-lg text-sm font-bold text-center border mb-2"></div>
-                            <div class="pt-4"><button type="button" id="btn-submit-cuti" onclick="submitCutiForm()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition transform active:scale-[0.98] flex items-center justify-center"><i class="ph-bold ph-paper-plane-tilt mr-2 text-lg"></i> Kirim Pengajuan Cuti</button></div>
+                            <div id="alert-cuti"
+                                class="hidden p-4 rounded-lg text-sm font-bold text-center border mb-2"></div>
+                            <div class="pt-4"><button type="button" id="btn-submit-cuti" onclick="submitCutiForm()"
+                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition transform active:scale-[0.98] flex items-center justify-center"><i
+                                        class="ph-bold ph-paper-plane-tilt mr-2 text-lg"></i> Kirim Pengajuan
+                                    Cuti</button></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. TAB FORM ATK (CHECKBOX STATIS) -->
+                <!-- 3. TAB FORM ATK (DIKEMBALIKAN KE VERSI CHECKBOX) -->
                 <div id="content-atk" class="hidden fade-in max-w-3xl mx-auto">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="bg-blue-600 p-6 text-white text-center"><h2 class="text-2xl font-bold">Permintaan Logistik Kantor</h2><p class="text-blue-200 text-sm mt-1">Form Pengadaan ATK & P3K</p></div>
+                    <div
+                        class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
+                        <div class="bg-blue-600 p-6 text-white text-center">
+                            <h2 class="text-2xl font-bold">Permintaan Logistik Kantor</h2>
+                            <p class="text-blue-200 text-sm mt-1">Form Pengadaan ATK & P3K</p>
+                        </div>
                         <div id="form-atk-app" class="p-6 sm:p-8 space-y-6">
                             <div>
-                                <h3 class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">I. Data Karyawan</h3>
+                                <h3
+                                    class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    I. Data Karyawan</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label><input type="text" id="atk-nama" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label><input type="text" id="atk-email" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                    <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Departemen</label><input type="text" id="atk-divisi" class="input-custom bg-gray-50 font-semibold" readonly></div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h3 class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">II. Daftar Barang</h3>
-                                <div class="mb-3 relative">
-                                    <input type="text" id="search-atk" class="input-custom pl-10" placeholder="Cari nama barang...">
-                                    <i class="ph ph-magnifying-glass absolute left-3 top-3 text-gray-400 text-lg"></i>
-                                </div>
-                                <p class="text-xs text-gray-500 mb-3">*Item dengan label <span class="text-green-600 font-bold bg-green-50 px-1 rounded">Hijau</span> adalah obat/P3K.</p>
-                                <div class="bg-white rounded-lg border border-gray-200 h-72 overflow-y-auto shadow-inner" id="atk-items-container">
-                                    <div class="flex justify-center items-center h-full"><div class="spinner border-blue-600"></div></div>
+                                    <div><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nama</label><input
+                                            type="text" id="atk-nama" class="input-custom bg-gray-50 font-semibold"
+                                            readonly></div>
+                                    <div><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase">Email</label><input
+                                            type="text" id="atk-email" class="input-custom bg-gray-50 font-semibold"
+                                            readonly></div>
+                                    <div><label
+                                            class="block text-xs font-bold text-gray-500 mb-1 uppercase">Departemen</label><input
+                                            type="text" id="atk-divisi" class="input-custom bg-gray-50 font-semibold"
+                                            readonly></div>
                                 </div>
                             </div>
 
-                            <div id="alert-atk" class="hidden p-4 rounded-lg text-sm font-bold text-center border mb-2 mt-4"></div>
-                            
+                            <div>
+                                <h3
+                                    class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    II. Daftar Barang</h3>
+                                <div class="mb-3 relative">
+                                    <input type="text" id="search-atk" class="input-custom pl-10"
+                                        placeholder="Cari nama barang...">
+                                    <i class="ph ph-magnifying-glass absolute left-3 top-3 text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-xs text-gray-500 mb-3">*Item dengan label <span
+                                        class="text-green-600 font-bold bg-green-50 px-1 rounded">Hijau</span> adalah
+                                    obat/P3K.</p>
+                                <div class="bg-white/60 backdrop-blur-sm rounded-lg border border-blue-200 h-72 overflow-y-auto shadow-inner"
+                                    id="atk-items-container">
+                                    <div class="flex justify-center items-center h-full">
+                                        <div class="spinner border-blue-600"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="alert-atk"
+                                class="hidden p-4 rounded-lg text-sm font-bold text-center border mb-2 mt-4"></div>
+
                             <div class="pt-4">
-                                <button type="button" id="btn-submit-atk" onclick="submitAtkForm()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition transform active:scale-[0.98] flex items-center justify-center">
+                                <button type="button" id="btn-submit-atk" onclick="submitAtkForm()"
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition transform active:scale-[0.98] flex items-center justify-center">
                                     <i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK
                                 </button>
                             </div>
@@ -238,83 +589,215 @@
                     </div>
                 </div>
 
-                <!-- 4. TAB RIWAYAT -->
+                <!-- 4. TAB RIWAYAT & CETAK -->
                 <div id="content-riwayat" class="hidden fade-in max-w-5xl mx-auto space-y-6">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
-                            <div class="flex items-center"><i class="ph-fill ph-calendar-blank text-indigo-500 text-2xl mr-3"></i><h2 class="text-lg font-bold text-indigo-900">Riwayat Pengajuan Cuti</h2></div>
-                            <button onclick="loadUserRiwayatCuti()" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center"><i class="ph-bold ph-arrows-clockwise mr-1"></i> Segarkan</button>
+                    <div
+                        class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                        <div
+                            class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
+                            <div class="flex items-center"><i
+                                    class="ph-fill ph-calendar-blank text-indigo-500 text-2xl mr-3"></i>
+                                <h2 class="text-lg font-bold text-indigo-900">Riwayat Pengajuan Cuti</h2>
+                            </div>
+                            <button onclick="loadUserRiwayatCuti()"
+                                class="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center"><i
+                                    class="ph-bold ph-arrows-clockwise mr-1"></i> Segarkan</button>
                         </div>
                         <div class="p-6">
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
-                                    <thead><tr><th class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Jenis Cuti</th><th class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Periode</th><th class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Durasi</th><th class="px-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Status</th><th class="px-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Aksi</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">
+                                                Jenis Cuti</th>
+                                            <th
+                                                class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">
+                                                Periode</th>
+                                            <th
+                                                class="px-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">
+                                                Durasi</th>
+                                            <th
+                                                class="px-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">
+                                                Status</th>
+                                            <th
+                                                class="px-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">
+                                                Aksi</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="table-riwayat-cuti" class="divide-y divide-gray-100">
-                                        <tr><td colspan="5" class="text-center py-8"><div class="spinner border-indigo-600"></div></td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center py-8">
+                                                <div class="spinner border-indigo-600"></div>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div
+                        class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
                         <div class="bg-blue-50 px-6 py-4 border-b border-blue-100 flex justify-between items-center">
-                            <div class="flex items-center"><i class="ph-fill ph-package text-blue-500 text-2xl mr-3"></i><h2 class="text-lg font-bold text-blue-900">Status Permintaan Barang</h2></div>
-                            <button onclick="loadUserRiwayatAtk()" class="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center"><i class="ph-bold ph-arrows-clockwise mr-1"></i> Segarkan</button>
+                            <div class="flex items-center"><i
+                                    class="ph-fill ph-package text-blue-500 text-2xl mr-3"></i>
+                                <h2 class="text-lg font-bold text-blue-900">Status Permintaan Barang</h2>
+                            </div>
+                            <button onclick="loadUserRiwayatAtk()"
+                                class="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center"><i
+                                    class="ph-bold ph-arrows-clockwise mr-1"></i> Segarkan</button>
                         </div>
                         <div class="p-6">
-                            <div id="container-riwayat-atk" class="space-y-4"><div class="flex justify-center py-8"><div class="spinner border-blue-600"></div></div></div>
+                            <div id="container-riwayat-atk" class="space-y-4">
+                                <div class="flex justify-center py-8">
+                                    <div class="spinner border-blue-600"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 5. TAB PROFIL PENGGUNA (HIDDEN DARI SIDEBAR, DIAKSES VIA AVATAR) -->
-                <div id="content-profil" class="hidden fade-in max-w-4xl mx-auto">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800 flex items-center"><i class="ph-fill ph-user-circle text-indigo-600 mr-3"></i> Pengaturan Akun</h2>
-                        <button onclick="switchTab('dashboard')" class="text-sm font-bold text-slate-500 hover:text-indigo-600 flex items-center"><i class="ph-bold ph-arrow-left mr-1"></i> Kembali</button>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-1 space-y-6">
-                            <!-- Profil Avatar -->
-                            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
-                                <div class="w-28 h-28 mx-auto rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-4xl border-4 border-indigo-100 mb-4" id="profil-avatar">K</div>
-                                <h3 class="text-xl font-bold text-gray-800 leading-tight mb-1" id="profil-nama">-</h3>
-                                <p class="text-sm text-slate-500 font-medium mb-3" id="profil-role-text">Staff</p>
-                                <div id="profil-role-badge"></div>
-                            </div>
-                            <!-- Sisa Cuti Mini -->
-                            <div class="bg-indigo-600 rounded-2xl shadow-sm border border-indigo-700 p-6 text-white text-center relative overflow-hidden">
-                                <i class="ph-fill ph-calendar-check absolute -right-4 -bottom-4 text-7xl opacity-20"></i>
-                                <p class="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1 relative z-10">Sisa Kuota Cuti</p>
-                                <p class="text-4xl font-black relative z-10"><span id="profil-sisa-cuti">-</span></p>
-                            </div>
+                <!-- 5. TAB PROFIL -->
+                <div id="content-profil" class="hidden fade-in max-w-4xl mx-auto space-y-6">
+                    <!-- Header Card -->
+                    <div
+                        class="relative overflow-hidden rounded-3xl shadow-xl border border-white/20 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 p-8 sm:p-10">
+                        <!-- Decorative Shapes -->
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+                        <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl">
                         </div>
 
-                        <div class="lg:col-span-2 space-y-6">
-                            <!-- Profil Detail -->
-                            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2"><i class="ph-fill ph-identification-card text-blue-500 mr-2"></i> Informasi Pekerjaan</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-4 bg-gray-50 p-5 rounded-xl border border-gray-100">
-                                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">ID / NIK Karyawan</label><p class="font-semibold text-gray-800" id="profil-id">-</p></div>
-                                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email Terdaftar</label><p class="font-semibold text-gray-800" id="profil-email">-</p></div>
-                                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Departemen / Divisi</label><p class="font-semibold text-gray-800" id="profil-divisi">-</p></div>
-                                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Jabatan</label><p class="font-semibold text-gray-800" id="profil-jabatan">-</p></div>
+                        <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-8">
+                            <div class="relative group cursor-pointer" title="Ganti Foto (Opsional)">
+                                <div class="w-32 h-32 rounded-full bg-white flex items-center justify-center text-indigo-700 font-black text-6xl shadow-[0_0_20px_rgba(255,255,255,0.3)] border-4 border-white transform transition-transform group-hover:scale-105"
+                                    id="profilAvatar">K</div>
+                                <div
+                                    class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="ph-fill ph-camera text-white text-3xl"></i>
                                 </div>
                             </div>
 
-                            <!-- Ubah Password Form -->
-                            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2"><i class="ph-fill ph-shield-check text-green-500 mr-2"></i> Keamanan Akun</h3>
-                                <form id="form-ubah-password-profil" class="space-y-4">
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div class="sm:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Password Lama</label><input type="password" id="p-lama" class="input-custom" required></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Password Baru</label><input type="password" id="p-baru" class="input-custom" required></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Ulangi Password Baru</label><input type="password" id="p-konfirm" class="input-custom" required></div>
+                            <div class="text-center sm:text-left flex-1 pt-2">
+                                <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2 drop-shadow-md"
+                                    id="profilNama">Nama Karyawan</h2>
+                                <p
+                                    class="text-indigo-200 font-bold uppercase tracking-wider text-sm sm:text-base flex items-center justify-center sm:justify-start gap-2">
+                                    <i class="ph-fill ph-briefcase"></i> <span id="profilPeran">Peran / Posisi</span>
+                                </p>
+                            </div>
+
+                            <button onclick="bukaModalPassword()"
+                                class="mt-4 sm:mt-0 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-bold py-3 px-6 rounded-xl transition-all border border-white/20 flex items-center group shadow-lg">
+                                <i class="ph-bold ph-key mr-2 text-xl group-hover:rotate-12 transition-transform"></i>
+                                Ubah Sandi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Detail Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        <!-- Personal Information -->
+                        <div
+                            class="bg-white rounded-3xl p-8 shadow-lg shadow-indigo-100/50 border border-slate-100 hover:shadow-xl transition-shadow relative overflow-hidden group">
+                            <div
+                                class="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-0 transition-transform group-hover:scale-110 duration-500">
+                            </div>
+
+                            <h3 class="relative z-10 text-xl font-black text-slate-800 mb-6 flex items-center">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3">
+                                    <i class="ph-fill ph-user text-xl"></i>
+                                </div>
+                                Informasi Pribadi
+                            </h3>
+
+                            <div class="space-y-6 relative z-10 pl-2">
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-buildings mr-1.5"></i> Perusahaan Utama
+                                    </p>
+                                    <p class="text-base font-bold text-slate-800" id="profilPT">-</p>
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-identification-card mr-1.5"></i> ID / NIK
+                                    </p>
+                                    <p class="text-base font-bold text-slate-800" id="profilId">-</p>
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-envelope-simple mr-1.5"></i> Email Terdaftar
+                                    </p>
+                                    <p class="text-base font-bold text-indigo-600" id="profilEmail">-</p>
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-calendar-plus mr-1.5"></i> Tanggal Bergabung
+                                    </p>
+                                    <p class="text-base font-bold text-slate-800" id="profilJoinDate">N/A</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employment Details -->
+                        <div
+                            class="bg-white rounded-3xl p-8 shadow-lg shadow-purple-100/50 border border-slate-100 hover:shadow-xl transition-shadow relative overflow-hidden group">
+                            <div
+                                class="absolute right-0 bottom-0 w-32 h-32 bg-purple-50 rounded-tl-full -z-0 transition-transform group-hover:scale-110 duration-500">
+                            </div>
+
+                            <h3 class="relative z-10 text-xl font-black text-slate-800 mb-6 flex items-center">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mr-3">
+                                    <i class="ph-fill ph-buildings text-xl"></i>
+                                </div>
+                                Jabatan & Departemen
+                            </h3>
+
+                            <div class="space-y-6 relative z-10 pl-2">
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-users-three mr-1.5"></i> Divisi Utama
+                                    </p>
+                                    <p class="text-base font-bold text-slate-800" id="profilDivisi">-</p>
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                        <i class="ph-fill ph-map-pin mr-1.5"></i> Lokasi Penempatan
+                                    </p>
+                                    <p class="text-base font-bold text-slate-800" id="profilCabang">Kantor Pusat</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mt-2">
+                                    <div
+                                        class="bg-gradient-to-r from-slate-50 to-slate-100 p-3 rounded-xl border border-slate-200 shadow-sm w-full">
+                                        <p
+                                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center">
+                                            <i class="ph-fill ph-database mr-1 text-sm"></i> Kuota Cuti
+                                        </p>
+                                        <p class="text-lg font-black text-slate-700"><span id="profilKuotaDasar"><span
+                                                    class="animate-pulse bg-slate-200 text-transparent rounded px-2">--</span></span>
+                                            <span class="text-[10px] font-bold text-slate-500">Hari</span>
+                                        </p>
                                     </div>
-                                    <div id="p-alert" class="hidden text-sm font-medium p-3 rounded-lg mt-2 text-center"></div>
-                                    <div class="pt-2 flex justify-end"><button type="submit" id="btn-simpan-p" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition flex justify-center items-center"><i class="ph-bold ph-key mr-2"></i> Simpan Password Baru</button></div>
-                                </form>
+                                    <div
+                                        class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3 rounded-xl border border-emerald-200 shadow-sm w-full">
+                                        <p
+                                            class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1 flex items-center">
+                                            <i class="ph-fill ph-calendar-check mr-1 text-sm"></i> Sisa Cuti (FIFO)
+                                        </p>
+                                        <p class="text-lg font-black text-emerald-700"><span id="profilSisaCuti"><span
+                                                    class="animate-pulse bg-emerald-200/50 text-transparent rounded px-2">--</span></span>
+                                            <span class="text-[10px] font-bold text-emerald-600/70">Tersedia</span>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -324,40 +807,43 @@
         </div>
     </div>
 
-    <!-- MODAL KALENDER PENUH -->
-    <div id="full-calendar-modal" class="hidden fixed inset-0 bg-slate-900/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm overflow-y-auto">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full my-8 flex flex-col max-h-[90vh] overflow-hidden border border-slate-200">
-            <div class="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-rose-50 rounded-lg text-rose-500"><i class="ph-fill ph-calendar-star text-3xl"></i></div>
-                    <div>
-                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 leading-tight">Kalender Libur Nasional</h2>
-                        <p class="text-slate-500 text-sm font-medium">Tahun <span id="cal-year-title"></span></p>
-                    </div>
-                </div>
-                <button onclick="document.getElementById('full-calendar-modal').classList.add('hidden')" class="bg-slate-100 p-2.5 rounded-full text-slate-500 hover:bg-red-50 hover:text-red-500 transition"><i class="ph-bold ph-x text-xl"></i></button>
+    <!-- MODALS -->
+    <div id="password-modal"
+        class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full transform transition-all">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center"><i
+                        class="ph-fill ph-lock-key text-indigo-600 mr-2 text-2xl"></i> Ubah Password</h2><button
+                    onclick="tutupModalPassword()" class="text-gray-400 hover:text-gray-600"><i
+                        class="ph ph-x text-xl"></i></button>
             </div>
-            
-            <div class="p-6 overflow-y-auto flex-grow bg-slate-50/50">
-                <div class="flex gap-6 mb-8 text-sm font-medium justify-center flex-wrap bg-white p-4 rounded-xl border border-slate-200 shadow-sm mx-auto max-w-lg">
-                    <div class="flex items-center"><div class="w-4 h-4 bg-red-100 border border-red-300 rounded mr-2.5"></div> Libur Nasional</div>
-                    <div class="flex items-center"><div class="w-4 h-4 bg-amber-100 border border-amber-300 rounded mr-2.5"></div> Cuti Bersama</div>
+            <form id="form-ubah-password" class="space-y-4">
+                <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Password
+                        Lama</label><input type="password" id="pass-lama" class="input-custom" required></div>
+                <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Password
+                        Baru</label><input type="password" id="pass-baru" class="input-custom" required></div>
+                <div><label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Konfirmasi
+                        Password Baru</label><input type="password" id="pass-konfirm" class="input-custom" required>
                 </div>
-                <div id="calendar-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            </div>
+                <div id="pass-alert" class="hidden text-sm font-medium p-3 rounded-lg mt-2"></div>
+                <div class="pt-4 border-t border-gray-100 flex gap-3"><button type="button"
+                        onclick="tutupModalPassword()"
+                        class="w-1/3 bg-gray-100 text-gray-700 font-bold py-2.5 rounded-lg hover:bg-gray-200 transition">Batal</button><button
+                        type="submit" id="btn-simpan-pass"
+                        class="w-2/3 bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 shadow-md transition flex justify-center items-center">Simpan</button>
+                </div>
+            </form>
         </div>
     </div>
-
     <input type="file" id="photo-upload-input" accept="image/*" capture="user" class="hidden">
 
     <script>
         let currentUser = null; let atkListLoaded = false; let currentUploadRow = null;
-        let globalLiburData = []; 
 
         function formatTglAman(tglString) {
-            if(!tglString) return '-';
+            if (!tglString) return '-';
             let d = new Date(tglString);
-            return isNaN(d) ? tglString : d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+            return isNaN(d) ? tglString : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -365,70 +851,321 @@
             if (!userDataString) { window.location.href = "<?= getScriptUrl() ?>?page=login"; return; }
             currentUser = JSON.parse(userDataString);
             setProfileUI();
+
+            // Panggil data kalender/pengumuman secara dinamis
             loadHomeData();
+
+            // Tampilkan halaman landing terlebih dahulu
             switchTab('home');
         });
-        
-        function setProfileUI() {
-            if(!currentUser) return;
-            const firstName = currentUser.nama.split(' ')[0]; const hour = new Date().getHours();
-            let greeting = hour < 11 ? 'Selamat Pagi' : (hour < 15 ? 'Selamat Siang' : (hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
-            
-            // Header & Landing
-            const landingName = document.getElementById('landingName'); if(landingName) landingName.textContent = currentUser.nama;
-            const landingGreeting = document.getElementById('landingGreeting'); if(landingGreeting) landingGreeting.textContent = `${greeting}!`;
-            const landingAvatar = document.getElementById('landingAvatar'); if(landingAvatar) landingAvatar.textContent = firstName.charAt(0).toUpperCase();
 
-            document.getElementById('userNameHeader').textContent = currentUser.nama; 
-            document.getElementById('userDivisiHeader').textContent = currentUser.divisi || currentUser.jabatan; 
-            document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
-            
-            // Dashboard
-            const welcomeTitle = document.getElementById('welcomeTitle'); if(welcomeTitle) welcomeTitle.textContent = `Halo ${firstName}, Selamat Bekerja!`;
-            const badge = document.getElementById('roleBadge'); if(badge) { badge.textContent = currentUser.peran; if(currentUser.peran === 'Admin') badge.className = 'bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200 uppercase tracking-wide'; }
+        window.applyBrandingUI = function (branding) {
+            if (!branding) return;
+            const logoEl = document.getElementById('sidebar-pt-logo');
+            const iconEl = document.getElementById('sidebar-logo-icon');
+            const nameEl = document.getElementById('sidebar-pt-name');
 
-            // Profil View
-            const profilAvatar = document.getElementById('profil-avatar'); if(profilAvatar) profilAvatar.textContent = firstName.charAt(0).toUpperCase();
-            const profilNama = document.getElementById('profil-nama'); if(profilNama) profilNama.textContent = currentUser.nama;
-            const roleTxt = document.getElementById('profil-role-text'); if(roleTxt) roleTxt.textContent = currentUser.jabatan || 'Staff';
-            const profilRole = document.getElementById('profil-role-badge'); if(profilRole) profilRole.innerHTML = currentUser.peran === 'Admin' ? '<span class="bg-red-100 text-red-700 text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest border border-red-200">Administrator</span>' : '<span class="bg-indigo-100 text-indigo-700 text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-widest border border-indigo-200">Karyawan</span>';
-            const profilId = document.getElementById('profil-id'); if(profilId) profilId.textContent = currentUser.id || '-';
-            const profilEmail = document.getElementById('profil-email'); if(profilEmail) profilEmail.textContent = currentUser.email || '-';
-            const profilDivisi = document.getElementById('profil-divisi'); if(profilDivisi) profilDivisi.textContent = currentUser.divisi || '-';
-            const profilJabatan = document.getElementById('profil-jabatan'); if(profilJabatan) profilJabatan.textContent = currentUser.jabatan || '-';
-
-            google.script.run.withSuccessHandler(sisa => {
-                const sisaEl = document.getElementById('sisaCutiAngka'); if(sisaEl) sisaEl.innerHTML = sisa;
-                const profilSisaEl = document.getElementById('profil-sisa-cuti'); if(profilSisaEl) profilSisaEl.textContent = sisa;
-                currentUser.sisaCuti = sisa; localStorage.setItem('userHRIS', JSON.stringify(currentUser));
-            }).getSisaCuti(currentUser.email);
-
-            // Form Auto-fill
-            if(document.getElementById('cuti-nama')) document.getElementById('cuti-nama').value = currentUser.nama;
-            if(document.getElementById('cuti-jabatan')) document.getElementById('cuti-jabatan').value = currentUser.jabatan;
-            if(document.getElementById('cuti-divisi')) document.getElementById('cuti-divisi').value = currentUser.divisi;
-            if(document.getElementById('atk-nama')) document.getElementById('atk-nama').value = currentUser.nama;
-            if(document.getElementById('atk-email')) document.getElementById('atk-email').value = currentUser.email;
-            if(document.getElementById('atk-divisi')) document.getElementById('atk-divisi').value = currentUser.divisi;
+            if (branding.logoBase64 && branding.logoBase64.length > 20 && logoEl && iconEl) {
+                logoEl.src = branding.logoBase64;
+                const containerEl = document.getElementById('sidebar-logo-container');
+                if (containerEl) {
+                    containerEl.classList.remove('hidden');
+                } else {
+                    logoEl.classList.remove('hidden');
+                }
+                iconEl.classList.add('hidden');
+            }
+            if (branding.namaLengkap && nameEl) {
+                nameEl.textContent = branding.namaLengkap;
+                nameEl.classList.add('text-sm');
+                nameEl.classList.remove('text-xl');
+            }
+            window.COMPANY_BRANDING_ACTIVE = branding;
         }
 
-        window.loadHomeData = function() {
+        function setProfileUI() {
+            if (!currentUser) return;
+            const firstName = currentUser.nama.split(' ')[0]; const hour = new Date().getHours();
+            let greeting = hour < 11 ? 'Selamat Pagi' : (hour < 15 ? 'Selamat Siang' : (hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
+
+            const landingName = document.getElementById('landingName'); if (landingName) landingName.textContent = currentUser.nama;
+            const landingGreeting = document.getElementById('landingGreeting'); if (landingGreeting) landingGreeting.textContent = `${greeting}!`;
+
+            // Sidebar: Dynamic company name
+            const sidebarName = document.getElementById('sidebar-pt-name');
+            if (sidebarName && currentUser.ptName) {
+                sidebarName.textContent = currentUser.ptName;
+                sidebarName.classList.add('text-sm');
+                sidebarName.classList.remove('text-xl');
+            }
+
+            // Dashboard header: Today's Date with day name
+            const dashPtNameEl = document.getElementById('dashboard-pt-name');
+            if (dashPtNameEl) {
+                dashPtNameEl.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            }
+
+            const headerTitle = document.getElementById('header-title'); if (headerTitle) headerTitle.textContent = `${greeting}, ${firstName}!`;
+            document.getElementById('userNameHeader').textContent = currentUser.nama;
+            document.getElementById('userDivisiHeader').textContent = currentUser.divisi || currentUser.jabatan;
+            document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+
+            // Populate Profile Tab
+            const pAv = document.getElementById('profilAvatar'); if (pAv) pAv.textContent = firstName.charAt(0).toUpperCase();
+            const pName = document.getElementById('profilNama'); if (pName) pName.textContent = currentUser.nama;
+            const pRole = document.getElementById('profilPeran'); if (pRole) pRole.textContent = currentUser.peran || 'Karyawan';
+            const pDiv = document.getElementById('profilDivisi'); if (pDiv) pDiv.textContent = currentUser.divisi || currentUser.jabatan || '-';
+            const pEmail = document.getElementById('profilEmail'); if (pEmail) pEmail.textContent = currentUser.email || '-';
+            const pId = document.getElementById('profilId'); if (pId) pId.textContent = currentUser.id || '-';
+            const pPT = document.getElementById('profilPT'); if (pPT) pPT.textContent = currentUser.ptName || '-';
+
+            const adminRoles = ['admin', 'hrd', 'user', 'atasan', 'ga', 'general affair'];
+            const peranLower = (currentUser.peran || '').toString().trim().toLowerCase();
+            const badge = document.getElementById('roleBadge'); if (badge) { badge.textContent = currentUser.peran; if (adminRoles.includes(peranLower)) badge.className = 'bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200 uppercase tracking-wide'; }
+
+            if (adminRoles.includes(peranLower)) {
+                const btnAdmin = document.getElementById('btn-admin-switch');
+                if (btnAdmin) btnAdmin.classList.remove('hidden');
+            }
+
+            const pJoinDate = document.getElementById('profilJoinDate');
+            if (pJoinDate && currentUser.tanggalMasuk) {
+                let d = new Date(currentUser.tanggalMasuk);
+                pJoinDate.textContent = isNaN(d) ? currentUser.tanggalMasuk : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+            }
+            const pKuotaDasar = document.getElementById('profilKuotaDasar');
+            if (pKuotaDasar) pKuotaDasar.textContent = (currentUser.sisaCuti || 0);
+
+            google.script.run.withSuccessHandler(sisa => {
+                const sisaEl = document.getElementById('sisaCutiAngka'); if (sisaEl) sisaEl.innerHTML = sisa;
+                const pSisaCuti = document.getElementById('profilSisaCuti'); if (pSisaCuti) pSisaCuti.textContent = sisa;
+                currentUser.dynamicUsableQuota = sisa; localStorage.setItem('userHRIS', JSON.stringify(currentUser));
+            }).getUsableQuotaForUser(currentUser.nama);
+
+            if (document.getElementById('cuti-nama')) document.getElementById('cuti-nama').value = currentUser.nama;
+            if (document.getElementById('cuti-jabatan')) document.getElementById('cuti-jabatan').value = currentUser.jabatan;
+            if (document.getElementById('cuti-divisi')) document.getElementById('cuti-divisi').value = currentUser.divisi;
+            if (document.getElementById('atk-nama')) document.getElementById('atk-nama').value = currentUser.nama;
+            if (document.getElementById('atk-email')) document.getElementById('atk-email').value = currentUser.email;
+            if (document.getElementById('atk-divisi')) document.getElementById('atk-divisi').value = currentUser.divisi;
+
+            // Load dan Apply Branding
+            if (currentUser.branding) {
+                console.log("Raw PT from Sheet: [" + currentUser.rawPtName + "]", "Branding loaded:", currentUser.branding);
+
+                const logoEl = document.getElementById('sidebar-pt-logo');
+                const containerEl = document.getElementById('sidebar-logo-container');
+                if (logoEl && currentUser.branding.logoBase64) {
+                    logoEl.src = currentUser.branding.logoBase64;
+                    if (containerEl) {
+                        containerEl.classList.remove('hidden');
+                    } else {
+                        logoEl.classList.remove('hidden');
+                    }
+                }
+
+                const dashName = document.getElementById('dashboard-pt-name');
+                if (dashName) {
+                    dashName.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                }
+
+                // Inject to Landing Page
+                const landingArea = document.getElementById('landing-brand-area');
+                const landingLogo = document.getElementById('landing-logo');
+                const landingPT = document.getElementById('landing-pt-name');
+                if (landingArea && currentUser.branding.logoBase64) {
+                    landingLogo.src = currentUser.branding.logoBase64;
+                    landingPT.textContent = currentUser.branding.namaLengkap;
+                    landingArea.classList.remove('hidden');
+                }
+
+                window.COMPANY_BRANDING_ACTIVE = currentUser.branding;
+            } else {
+                console.log("Branding missing in currentUser, attempting fallback...", currentUser);
+                google.script.run.withSuccessHandler(ptName => {
+                    if (ptName) {
+                        currentUser.ptName = ptName;
+                    }
+                    google.script.run.withSuccessHandler(brand => {
+                        if (brand) {
+                            currentUser.branding = brand;
+                            localStorage.setItem('userHRIS', JSON.stringify(currentUser));
+                            const sb = document.getElementById('sidebar-pt-logo');
+                            const sc = document.getElementById('sidebar-logo-container');
+                            if (sb && brand.logoBase64) {
+                                sb.src = brand.logoBase64;
+                                if (sc) sc.classList.remove('hidden');
+                                else sb.classList.remove('hidden');
+                            }
+                            const dn = document.getElementById('dashboard-pt-name');
+                            if (dn && brand.namaLengkap) dn.innerText = brand.namaLengkap;
+                            window.COMPANY_BRANDING_ACTIVE = brand;
+                        }
+                    }).getBrandingData(ptName || "");
+                }).getPtNameByUserEmail(currentUser.email);
+            }
+        }
+
+        // Employee calendar state
+        let empCalView = 'agenda';
+        let empCalMonth = new Date().getMonth();
+        let empCalYear = new Date().getFullYear();
+        let globalEmpLiburData = [];
+
+        window.switchEmpCalView = function (view) {
+            empCalView = view;
+            const btnAgenda = document.getElementById('emp-btn-agenda');
+            const btnBulan = document.getElementById('emp-btn-bulan');
+            const agendaWrapper = document.getElementById('emp-agenda-wrapper');
+            const monthWrapper = document.getElementById('emp-month-wrapper');
+
+            if (view === 'agenda') {
+                btnAgenda.className = 'px-3 py-1.5 text-xs font-bold transition-all bg-rose-600 text-white';
+                btnBulan.className = 'px-3 py-1.5 text-xs font-bold transition-all text-rose-600 hover:bg-rose-50';
+                agendaWrapper.classList.remove('hidden');
+                monthWrapper.classList.add('hidden');
+            } else {
+                btnAgenda.className = 'px-3 py-1.5 text-xs font-bold transition-all text-rose-600 hover:bg-rose-50';
+                btnBulan.className = 'px-3 py-1.5 text-xs font-bold transition-all bg-rose-600 text-white';
+                agendaWrapper.classList.add('hidden');
+                monthWrapper.classList.remove('hidden');
+                renderEmpMonthGrid();
+            }
+        }
+
+        window.renderEmpMonthGrid = function () {
+            const grid = document.getElementById('emp-month-grid');
+            const titleEl = document.getElementById('emp-month-title');
+            grid.innerHTML = '';
+
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            titleEl.textContent = monthNames[empCalMonth] + ' ' + empCalYear;
+
+            const firstDay = new Date(empCalYear, empCalMonth, 1).getDay();
+            const daysInMonth = new Date(empCalYear, empCalMonth + 1, 0).getDate();
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+
+            let eventMap = {};
+            globalEmpLiburData.forEach(l => {
+                let d = new Date(l.tanggal);
+                if (!isNaN(d) && d.getMonth() === empCalMonth && d.getFullYear() === empCalYear) {
+                    let key = d.getDate();
+                    if (!eventMap[key]) eventMap[key] = [];
+                    eventMap[key].push(l);
+                }
+            });
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += '<div class="bg-slate-50 min-h-[60px] p-1"></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                let cellDate = new Date(empCalYear, empCalMonth, day);
+                let isToday = cellDate.getTime() === today.getTime();
+                let isSunday = cellDate.getDay() === 0;
+                let events = eventMap[day] || [];
+
+                let bgClass = 'bg-white hover:bg-blue-50/50';
+                let numClass = 'text-slate-700';
+                if (isToday) { bgClass = 'bg-gradient-to-br from-blue-50 to-indigo-100 ring-2 ring-inset ring-blue-400'; numClass = 'text-blue-700 font-black'; }
+                else if (isSunday) { numClass = 'text-rose-500 font-bold'; }
+
+                let eventsHtml = '';
+                events.forEach(ev => {
+                    let isCuti = ev.status.toLowerCase().includes('cuti');
+                    let dotColor = isCuti ? 'bg-amber-400' : 'bg-rose-500';
+                    eventsHtml += `<div class="flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0"></span><span class="text-[9px] font-bold text-slate-600 truncate leading-tight">${ev.nama}</span></div>`;
+                });
+
+                grid.innerHTML += `
+                <div onclick="showHolidayDetail(${day}, ${empCalMonth}, ${empCalYear})" 
+                     class="${bgClass} min-h-[60px] p-1 transition-colors relative group ${events.length > 0 ? 'cursor-pointer hover:shadow-md' : ''}">
+                    <span class="text-xs ${numClass} block mb-0.5">${day}</span>
+                    <div class="space-y-0">${eventsHtml}</div>
+                </div>`;
+            }
+        }
+
+        window.showHolidayDetail = function (day, month, year) {
+            let cellDate = new Date(year, month, day);
+            let dateStr = cellDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            let events = globalEmpLiburData.filter(l => {
+                let d = new Date(l.tanggal);
+                return !isNaN(d) && d.getDate() === day && d.getMonth() === month && d.getFullYear() === year;
+            });
+
+            if (events.length === 0) return;
+
+            let html = '<div class="text-left space-y-4">';
+            events.forEach(ev => {
+                let isCuti = ev.status.toLowerCase().includes('cuti');
+                let badgeColor = isCuti ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-rose-100 text-rose-700 border-rose-200';
+                html += `
+                <div class="p-4 rounded-2xl border border-gray-100 bg-gray-50 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-black uppercase tracking-widest ${badgeColor} px-3 py-1 rounded-full border">${ev.status}</span>
+                        <span class="text-xs font-bold text-gray-400">${dateStr}</span>
+                    </div>
+                    <h4 class="text-lg font-black text-slate-800 mb-1">${ev.nama}</h4>
+                    <p class="text-sm text-slate-600">${ev.keterangan || 'Tidak ada keterangan tambahan.'}</p>
+                </div>`;
+            });
+            html += '</div>';
+
+            Swal.fire({
+                title: '<span class="text-xl font-black text-slate-800">Detail Hari Libur</span>',
+                html: html,
+                icon: 'info',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#4f46e5',
+                customClass: {
+                    popup: 'rounded-3xl border-none shadow-2xl',
+                    confirmButton: 'rounded-xl px-8 py-3 font-bold uppercase tracking-wide'
+                }
+            });
+        }
+
+        window.empPrevMonth = function () {
+            empCalMonth--;
+            if (empCalMonth < 0) { empCalMonth = 11; empCalYear--; }
+            renderEmpMonthGrid();
+        }
+        window.empNextMonth = function () {
+            empCalMonth++;
+            if (empCalMonth > 11) { empCalMonth = 0; empCalYear++; }
+            renderEmpMonthGrid();
+        }
+        window.empGoToday = function () {
+            let t = new Date();
+            empCalMonth = t.getMonth();
+            empCalYear = t.getFullYear();
+            renderEmpMonthGrid();
+        }
+
+        // =================================================================
+        // DYNAMIC HOME DATA (PENGUMUMAN & KALENDER DARI GOOGLE SHEET)
+        // =================================================================
+        window.loadHomeData = function () {
             const pList = document.getElementById('pengumuman-list');
             const lList = document.getElementById('libur-list');
-            if(!pList || !lList) return;
-            
+            if (!pList || !lList) return;
+
             google.script.run.withSuccessHandler(res => {
-                if(res.success) {
-                    if(res.pengumuman.length === 0) {
+                if (res.success) {
+                    // Pengumuman
+                    if (res.pengumuman.length === 0) {
                         pList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Belum ada pengumuman terbaru.</p>';
                     } else {
                         pList.innerHTML = '';
                         res.pengumuman.forEach(p => {
                             let colorClass = 'bg-blue-500'; let shadowClass = 'shadow-[0_0_8px_rgba(59,130,246,0.6)]';
                             let w = p.warna ? p.warna.toLowerCase() : '';
-                            if(w.includes('merah')) { colorClass = 'bg-red-500'; shadowClass = 'shadow-[0_0_8px_rgba(239,68,68,0.6)]'; }
-                            else if(w.includes('hijau')) { colorClass = 'bg-green-500'; shadowClass = 'shadow-[0_0_8px_rgba(34,197,94,0.6)]'; }
-                            else if(w.includes('kuning') || w.includes('oren')) { colorClass = 'bg-amber-500'; shadowClass = 'shadow-[0_0_8px_rgba(245,158,11,0.6)]'; }
+                            if (w.includes('merah')) { colorClass = 'bg-red-500'; shadowClass = 'shadow-[0_0_8px_rgba(239,68,68,0.6)]'; }
+                            else if (w.includes('hijau')) { colorClass = 'bg-green-500'; shadowClass = 'shadow-[0_0_8px_rgba(34,197,94,0.6)]'; }
+                            else if (w.includes('kuning') || w.includes('oren')) { colorClass = 'bg-amber-500'; shadowClass = 'shadow-[0_0_8px_rgba(245,158,11,0.6)]'; }
+
+                            let lampiranHtml = p.lampiran ? `<a href="${p.lampiran}" target="_blank" class="mt-2 inline-flex items-center text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100 hover:bg-indigo-100 transition shadow-sm"><i class="ph-bold ph-link mr-1"></i> Buka Lampiran</a>` : '';
 
                             pList.innerHTML += `
                             <li class="flex items-start">
@@ -437,174 +1174,170 @@
                                     <p class="text-base font-bold text-gray-800 leading-tight">${p.judul}</p>
                                     <p class="text-xs font-semibold text-indigo-600 mb-1.5 mt-0.5">${p.tanggal}</p>
                                     <p class="text-sm text-gray-600">${p.isi}</p>
+                                    ${lampiranHtml}
                                 </div>
                             </li>`;
                         });
                     }
 
-                    globalLiburData = res.libur; 
-                    if(res.libur.length === 0) {
-                        lList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Tidak ada jadwal libur terdekat.</p>';
+                    // Store libur data globally for month grid
+                    globalEmpLiburData = res.libur || [];
+
+                    // Kalender Libur — filter seluruh hari di bulan ini (Agenda) yg belum lewat
+                    let today30 = new Date();
+                    today30.setHours(0, 0, 0, 0);
+                    let limit30 = new Date(today30.getFullYear(), today30.getMonth() + 1, 0);
+                    limit30.setHours(23, 59, 59, 999);
+
+                    let upcoming = globalEmpLiburData.filter(l => {
+                        let d = new Date(l.tanggal);
+                        return !isNaN(d) && d >= today30 && d <= limit30;
+                    }).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+                    if (upcoming.length === 0) {
+                        lList.innerHTML = '<div class="flex flex-col items-center justify-center py-8 opacity-60"><i class="ph-fill ph-calendar-blank text-4xl text-gray-300 mb-2"></i><p class="text-sm text-gray-500 text-center font-medium">Tidak ada tanggal merah di bulan ini.</p></div>';
                     } else {
                         lList.innerHTML = '';
-                        let upcoming = res.libur.filter(l => new Date(l.tanggal) >= new Date().setHours(0,0,0,0)).slice(0, 5);
-                        
                         upcoming.forEach(l => {
                             let d = new Date(l.tanggal);
-                            let month = isNaN(d) ? '' : d.toLocaleString('id-ID', { month: 'short' });
-                            let dateNum = isNaN(d) ? '-' : d.getDate();
-                            
+                            let month = d.toLocaleString('id-ID', { month: 'short' });
+                            let dateNum = d.getDate();
+
                             let st = l.status ? l.status.toLowerCase() : '';
                             let badgeColor = st.includes('cuti') ? 'text-amber-700 bg-amber-100 border-amber-200' : 'text-rose-700 bg-rose-100 border-rose-200';
                             let textMonthColor = st.includes('cuti') ? 'text-amber-600' : 'text-rose-600';
 
                             lList.innerHTML += `
-                            <li class="flex items-center justify-between p-3 bg-gray-50 hover:bg-rose-50/50 transition-colors rounded-xl border border-gray-100 shadow-sm cursor-default" title="${l.nama}">
+                            <li class="flex items-center justify-between p-3 bg-gray-50 hover:bg-rose-50/50 transition-colors rounded-xl border border-gray-100 shadow-sm">
                                 <div class="flex items-center">
                                     <div class="bg-white border border-gray-200 rounded-lg p-2 text-center mr-4 w-14 shadow-sm">
                                         <span class="block text-[10px] font-bold ${textMonthColor} uppercase tracking-wider">${month}</span>
                                         <span class="block text-xl font-black text-gray-800 leading-none mt-0.5">${dateNum}</span>
                                     </div>
-                                    <div class="truncate max-w-[150px] sm:max-w-[250px]">
-                                        <p class="text-sm font-bold text-gray-800 truncate">${l.nama}</p>
-                                        <p class="text-xs text-gray-500 truncate">${l.keterangan}</p>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-800">${l.nama}</p>
+                                        <p class="text-xs text-gray-500">${l.keterangan}</p>
                                     </div>
                                 </div>
-                                <span class="text-xs font-bold ${badgeColor} border px-3 py-1 rounded-full uppercase tracking-wider ml-2">${l.status}</span>
+                                <span class="text-xs font-bold ${badgeColor} border px-3 py-1 rounded-full uppercase tracking-wider">${l.status}</span>
                             </li>`;
                         });
                     }
+
+                    // If month view is active, also refresh it
+                    if (empCalView === 'bulan') {
+                        renderEmpMonthGrid();
+                    }
                 } else {
-                    pList.innerHTML = `<p class="text-sm text-red-500">Gagal memuat: ${res.message}</p>`;
-                    lList.innerHTML = `<p class="text-sm text-red-500">Gagal memuat: ${res.message}</p>`;
+                    pList.innerHTML = `<p class="text-sm text-red-500">Gagal: ${res.message}</p>`;
+                    lList.innerHTML = `<p class="text-sm text-red-500">Gagal: ${res.message}</p>`;
                 }
             }).getHomeData();
         }
 
-        window.openFullCalendar = function() {
-            const year = new Date().getFullYear();
-            document.getElementById('cal-year-title').textContent = year;
-            const calContainer = document.getElementById('calendar-grid');
-            calContainer.innerHTML = '';
-            
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            const daysOfWeek = ['Mg', 'Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb'];
-            
-            let liburMap = {};
-            globalLiburData.forEach(l => {
-                let d = new Date(l.tanggal);
-                if(!isNaN(d) && d.getFullYear() === year) {
-                    let key = `${d.getMonth()}-${d.getDate()}`;
-                    liburMap[key] = { nama: l.nama, status: l.status.toLowerCase() };
-                }
-            });
-
-            months.forEach((month, mIndex) => {
-                let daysInMonth = new Date(year, mIndex + 1, 0).getDate();
-                let firstDay = new Date(year, mIndex, 1).getDay(); 
-                
-                let monthHtml = `<div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                    <h4 class="font-black text-center text-slate-800 mb-3 text-base border-b border-slate-100 pb-2">${month}</h4>
-                    <div class="grid grid-cols-7 gap-1 mb-2 text-center text-[11px]">`;
-                
-                daysOfWeek.forEach((day, i) => {
-                    let color = i === 0 ? 'text-red-500 font-bold' : 'text-slate-400 font-bold';
-                    monthHtml += `<div class="${color}">${day}</div>`;
-                });
-                
-                monthHtml += `</div><div class="grid grid-cols-7 gap-1 text-center text-sm">`;
-                for(let i=0; i<firstDay; i++) { monthHtml += `<div></div>`; } 
-                
-                for(let d=1; d<=daysInMonth; d++) {
-                    let currentDay = new Date(year, mIndex, d).getDay();
-                    let key = `${mIndex}-${d}`;
-                    let isSunday = currentDay === 0;
-                    let isLibur = liburMap[key];
-                    
-                    let bgClass = 'hover:bg-slate-100 rounded-lg cursor-default';
-                    let textClass = isSunday ? 'text-red-600 font-bold' : 'text-slate-600 font-medium';
-                    let tooltip = '';
-                    
-                    if(isLibur) {
-                        if(isLibur.status.includes('cuti')) {
-                            bgClass = 'bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg cursor-help shadow-sm';
-                            textClass = 'text-amber-700 font-bold';
-                        } else {
-                            bgClass = 'bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg cursor-help shadow-sm';
-                            textClass = 'text-red-700 font-bold';
-                        }
-                        tooltip = `title="${isLibur.nama}"`;
-                    }
-                    
-                    monthHtml += `<div class="p-1 aspect-square flex items-center justify-center mx-auto w-full max-w-[32px] ${bgClass} ${textClass} transition-colors" ${tooltip}>${d}</div>`;
-                }
-                monthHtml += `</div></div>`;
-                calContainer.innerHTML += monthHtml;
-            });
-
-            document.getElementById('full-calendar-modal').classList.remove('hidden');
-        }
-
         const TABS = ['home', 'dashboard', 'cuti', 'atk', 'riwayat', 'profil'];
-        window.switchTab = function(tabId) {
-            if(tabId === 'home') {
+        window.switchTab = function (tabId) {
+            // Auto close sidebar on mobile if open
+            const sidebar = document.getElementById('sidebar-user');
+            if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
+
+            if (tabId === 'home') {
                 document.getElementById('content-home').classList.remove('hidden');
                 document.getElementById('app-layout').classList.add('hidden');
-                loadHomeData(); 
+                loadHomeData(); // Refresh data saat buka home
             } else {
                 document.getElementById('content-home').classList.add('hidden');
                 document.getElementById('app-layout').classList.remove('hidden');
-                TABS.forEach(t => { 
-                    if(t !== 'home' && t !== 'profil') {
-                        document.getElementById(`content-${t}`).classList.add('hidden'); 
-                        const menu = document.getElementById(`menu-${t}`); 
-                        if(menu) { menu.classList.remove('menu-active'); menu.classList.add('menu-inactive'); } 
+
+                TABS.forEach(t => {
+                    if (t !== 'home') {
+                        document.getElementById(`content-${t}`).classList.add('hidden');
+                        const menu = document.getElementById(`menu-${t}`);
+                        if (menu) { menu.classList.remove('menu-active'); menu.classList.add('menu-inactive'); }
                     }
                 });
-                
-                if(tabId !== 'profil') document.getElementById('content-profil').classList.add('hidden');
 
                 document.getElementById(`content-${tabId}`).classList.remove('hidden');
-                
-                if (tabId !== 'profil') {
-                   const activeMenu = document.getElementById(`menu-${tabId}`); 
-                   if(activeMenu) { activeMenu.classList.remove('menu-inactive'); activeMenu.classList.add('menu-active'); }
-                }
-                
+                const activeMenu = document.getElementById(`menu-${tabId}`);
+                if (activeMenu) { activeMenu.classList.remove('menu-inactive'); activeMenu.classList.add('menu-active'); }
+
                 const headerTitle = document.getElementById('header-title');
-                if(tabId === 'dashboard') { headerTitle.textContent = "Dashboard Overview"; } 
-                else if (tabId === 'cuti') { headerTitle.textContent = "Pengajuan Cuti Karyawan"; } 
-                else if (tabId === 'atk') { headerTitle.textContent = "Permintaan Logistik Kantor"; } 
+                if (tabId === 'dashboard') { if (currentUser) { const hour = new Date().getHours(); let g = hour < 11 ? 'Selamat Pagi' : (hour < 15 ? 'Selamat Siang' : (hour < 18 ? 'Selamat Sore' : 'Selamat Malam')); headerTitle.textContent = `${g}, ${currentUser.nama.split(' ')[0]}!`; } else { headerTitle.textContent = "Dashboard"; } }
+                else if (tabId === 'cuti') { headerTitle.textContent = "Pengajuan Cuti"; }
+                else if (tabId === 'atk') { headerTitle.textContent = "Permintaan Barang Logistik"; }
                 else if (tabId === 'riwayat') { headerTitle.textContent = "Riwayat & Status"; }
-                else if (tabId === 'profil') { headerTitle.textContent = "Pengaturan Akun"; }
-                
-                if(tabId === 'atk' && !atkListLoaded) { loadAtkItemsList(); atkListLoaded = true; }
-                if(tabId === 'riwayat') { loadUserRiwayatCuti(); loadUserRiwayatAtk(); }
+                else if (tabId === 'profil') { headerTitle.textContent = "Profil Saya"; }
+
+                if (tabId === 'atk' && !atkListLoaded) { loadAtkItemsList(); atkListLoaded = true; }
+                if (tabId === 'riwayat') { loadUserRiwayatCuti(); loadUserRiwayatAtk(); }
             }
         }
 
-        window.hitungLamaCuti = function() {
+        window.hitungLamaCuti = function () {
             const t1 = document.getElementById('cuti-tgl-mulai').value; const t2 = document.getElementById('cuti-tgl-selesai').value; const inputLama = document.getElementById('cuti-lama');
-            if (t1 && t2) { const diffTime = new Date(t2) - new Date(t1); const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; if (diffDays > 0) { inputLama.value = diffDays; } else { inputLama.value = ''; alert('Tanggal Selesai harus setelah Tanggal Mulai!'); document.getElementById('cuti-tgl-selesai').value = ''; } }
+            if (t1 && t2) {
+                let d1 = new Date(t1); let d2 = new Date(t2);
+                if (d2 < d1) { inputLama.value = ''; alert('Tanggal Selesai harus setelah Tanggal Mulai!'); document.getElementById('cuti-tgl-selesai').value = ''; return; }
+                let count = 0; let cur = new Date(d1);
+                while (cur <= d2) { let day = cur.getDay(); if (day !== 0 && day !== 6) { count++; } cur.setDate(cur.getDate() + 1); }
+                inputLama.value = count;
+            }
         }
 
-        window.submitCutiForm = function() {
+        window.toggleKeteranganMenu = function () {
+            const cutiJenis = document.getElementById('cuti-jenis').value;
+            const container = document.getElementById('keterangan-container');
+            const input = document.getElementById('cuti-keterangan');
+            if (cutiJenis === 'Lain-lain') {
+                container.classList.remove('hidden');
+                input.setAttribute('required', 'true');
+            } else {
+                container.classList.add('hidden');
+                input.removeAttribute('required');
+                input.value = '';
+            }
+        }
+
+        // =================================================================
+        // SUBMIT CUTI 
+        // =================================================================
+        window.submitCutiForm = function () {
             const btn = document.getElementById('btn-submit-cuti'); const alertBox = document.getElementById('alert-cuti');
             const penempatan = document.querySelector('input[name="penempatan"]').value; const jenis_cuti = document.querySelector('select[name="jenis_cuti"]').value; const tgl_mulai = document.getElementById('cuti-tgl-mulai').value; const tgl_selesai = document.getElementById('cuti-tgl-selesai').value; const alamat = document.querySelector('textarea[name="alamat_cuti"]').value; const no_hp = document.querySelector('input[name="no_hp"]').value; const lama_cuti = document.getElementById('cuti-lama').value;
-            if(!penempatan || !jenis_cuti || !tgl_mulai || !tgl_selesai || !lama_cuti || !alamat || !no_hp) { alertBox.textContent = 'Harap lengkapi semua field yang wajib diisi!'; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; alertBox.classList.remove('hidden'); return; }
+            const keterangan = document.getElementById('cuti-keterangan').value;
+            if (!penempatan || !jenis_cuti || !tgl_mulai || !tgl_selesai || !lama_cuti || !alamat || !no_hp || (jenis_cuti === 'Lain-lain' && !keterangan)) { alertBox.textContent = 'Harap lengkapi semua field yang wajib diisi!'; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; alertBox.classList.remove('hidden'); return; }
+
+            if (parseFloat(lama_cuti) > parseFloat(currentUser.sisaCuti)) {
+                alertBox.textContent = `Gagal: Durasi cuti (${lama_cuti} hari) melebihi Sisa Cuti Tersedia (${currentUser.sisaCuti} hari).`;
+                alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                alertBox.classList.remove('hidden');
+                Swal.fire({
+                    title: 'Kuota Tidak Cukup',
+                    text: `Pengajuan cuti Anda (${lama_cuti} hari) melebihi sisa kuota FIFO yang tersedia (${currentUser.sisaCuti} hari).`,
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+
             btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white"></div> Mengirim...'; alertBox.classList.add('hidden');
-            const dataObj = { nama: document.getElementById('cuti-nama').value, jabatan: document.getElementById('cuti-jabatan').value, divisi: document.getElementById('cuti-divisi').value, penempatan: penempatan, jenis_cuti: jenis_cuti, tanggal_mulai: tgl_mulai, tanggal_selesai: tgl_selesai, lama_cuti: lama_cuti, alamat_cuti: alamat, no_hp: no_hp, pengganti: document.querySelector('input[name="pengganti"]').value };
+            const dataObj = { nama: document.getElementById('cuti-nama').value, jabatan: document.getElementById('cuti-jabatan').value, divisi: document.getElementById('cuti-divisi').value, penempatan: penempatan, jenis_cuti: jenis_cuti, tanggal_mulai: tgl_mulai, tanggal_selesai: tgl_selesai, lama_cuti: lama_cuti, alamat_cuti: alamat, no_hp: no_hp, pengganti: document.querySelector('input[name="pengganti"]').value, keterangan: keterangan };
             google.script.run.withSuccessHandler(res => {
                 btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt mr-2 text-lg"></i> Kirim Pengajuan Cuti'; alertBox.classList.remove('hidden');
-                if(res.status === 'success') { alertBox.className = 'p-4 rounded-lg text-sm font-bold text-center border bg-green-100 text-green-800 border-green-200'; alertBox.textContent = res.message; document.getElementById('cuti-tgl-mulai').value = ''; document.getElementById('cuti-tgl-selesai').value = ''; document.getElementById('cuti-lama').value = ''; document.querySelector('textarea[name="alamat_cuti"]').value = ''; setTimeout(() => switchTab('riwayat'), 1500); } 
+                if (res.status === 'success') { alertBox.className = 'p-4 rounded-lg text-sm font-bold text-center border bg-green-100 text-green-800 border-green-200'; alertBox.textContent = res.message; document.getElementById('cuti-tgl-mulai').value = ''; document.getElementById('cuti-tgl-selesai').value = ''; document.getElementById('cuti-lama').value = ''; document.querySelector('textarea[name="alamat_cuti"]').value = ''; document.getElementById('cuti-keterangan').value = ''; setTimeout(() => switchTab('riwayat'), 1500); }
                 else { alertBox.className = 'p-4 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 border-red-200'; alertBox.textContent = res.message; }
             }).withFailureHandler(err => { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt mr-2 text-lg"></i> Kirim Pengajuan Cuti'; alertBox.classList.remove('hidden'); alertBox.className = 'p-4 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 border-red-200'; alertBox.textContent = "Error: " + err.message; }).simpanDataCuti(dataObj);
         }
 
+        // =================================================================
+        // KEMBALI KE LOGIKA FORM ATK CHECKBOX (STATIS)
+        // =================================================================
         function loadAtkItemsList() {
             const container = document.getElementById('atk-items-container');
             google.script.run.withSuccessHandler(items => {
-                container.innerHTML = ''; 
+                container.innerHTML = '';
                 if (!items || items.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-500">Stok logistik kosong.</div>'; return; }
                 items.forEach((item, index) => {
                     const isOut = item.stock <= 0; const isP3k = item.name.toLowerCase().includes('p3k') || item.name.toLowerCase().includes('obat');
@@ -620,126 +1353,315 @@
                                     <span class="block text-xs text-gray-500">Sisa Stok: ${item.stock}</span>
                                 </div>
                             </div>
-                            <div class="ml-4"><input type="number" min="1" max="${item.stock}" value="1" class="atk-quantity w-20 input-custom py-1 text-center hidden font-bold" placeholder="Jml"></div>
+                            <div class="ml-4"><input type="number" min="1" max="${item.stock}" value="1" class="atk-quantity w-20 input-custom py-1 text-center hidden" placeholder="Jml"></div>
                         </div>`;
                 });
                 container.querySelectorAll('.atk-checkbox').forEach(cb => {
                     cb.addEventListener('change', (e) => {
                         const row = e.target.closest('.item-row'); const qty = row.querySelector('.atk-quantity');
-                        if (e.target.checked) { qty.classList.remove('hidden'); row.classList.add('bg-blue-50'); qty.focus(); } 
+                        if (e.target.checked) { qty.classList.remove('hidden'); row.classList.add('bg-blue-50'); qty.focus(); }
                         else { qty.classList.add('hidden'); row.classList.remove('bg-blue-50'); }
                     });
                 });
             }).getAtkItems();
         }
 
-        document.getElementById('search-atk').addEventListener('keyup', function() {
+        document.getElementById('search-atk').addEventListener('keyup', function () {
             const filter = this.value.toLowerCase();
             document.querySelectorAll('.item-row').forEach(item => {
                 const label = item.querySelector('label').textContent.toLowerCase();
-                if(label.includes(filter)) item.classList.remove('hidden-by-search'); else item.classList.add('hidden-by-search');
+                if (label.includes(filter)) item.classList.remove('hidden-by-search'); else item.classList.add('hidden-by-search');
             });
         });
 
-        window.submitAtkForm = function() {
-            const alertBox = document.getElementById('alert-atk'); const btn = document.getElementById('btn-submit-atk'); 
+        window.submitAtkForm = function () {
+            const alertBox = document.getElementById('alert-atk'); const btn = document.getElementById('btn-submit-atk');
             try {
                 alertBox.classList.add('hidden'); const selectedItems = [];
-                document.getElementById('atk-items-container').querySelectorAll('.atk-checkbox:checked').forEach(cb => { 
+                document.getElementById('atk-items-container').querySelectorAll('.atk-checkbox:checked').forEach(cb => {
                     const qtyInput = cb.closest('.item-row').querySelector('.atk-quantity');
-                    const qty = parseInt(qtyInput.value) || 0; 
-                    if(qty > 0) { selectedItems.push({ name: cb.getAttribute('data-name'), quantity: qty }); } 
+                    const qty = parseInt(qtyInput.value) || 0;
+                    if (qty > 0) { selectedItems.push({ name: cb.getAttribute('data-name'), quantity: qty }); }
                 });
-                
-                if (selectedItems.length === 0) { alertBox.textContent = 'Pilih minimal satu barang!'; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; alertBox.classList.remove('hidden'); return; }
-                btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white"></div> Mengirim...';
-                
+
+                if (selectedItems.length === 0) {
+                    alertBox.textContent = 'Pilih minimal satu barang!';
+                    alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner spinner-white"></div> Mengirim...';
+
                 google.script.run
                     .withSuccessHandler(res => {
                         btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK';
-                        if(res.success) { 
-                            alertBox.textContent = 'Berhasil! Permohonan barang terkirim ke GA.'; 
-                            alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-green-100 text-green-800 block mb-2'; 
-                            alertBox.classList.remove('hidden'); 
-                            
+                        if (res.success) {
+                            alertBox.textContent = 'Berhasil! Permohonan barang terkirim ke GA.';
+                            alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-green-100 text-green-800 block mb-2';
+                            alertBox.classList.remove('hidden');
+
                             document.querySelectorAll('.atk-checkbox:checked').forEach(cb => {
                                 cb.checked = false;
                                 const row = cb.closest('.item-row');
                                 row.querySelector('.atk-quantity').classList.add('hidden');
                                 row.classList.remove('bg-blue-50');
-                            }); 
-                            setTimeout(() => switchTab('riwayat'), 1500); 
-                        } 
-                        else { alertBox.textContent = res.message; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; alertBox.classList.remove('hidden'); }
+                            });
+
+                            setTimeout(() => switchTab('riwayat'), 1500);
+                        }
+                        else {
+                            alertBox.textContent = res.message;
+                            alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                            alertBox.classList.remove('hidden');
+                        }
                     })
-                    .withFailureHandler(err => { 
-                        btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK'; 
-                        alertBox.textContent = "Gagal menghubungi server: " + err.message; 
-                        alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; 
-                        alertBox.classList.remove('hidden'); 
-                    }).submitRequest({ employeeName: currentUser.nama, employeeEmail: currentUser.email, department: currentUser.divisi || currentUser.jabatan || '-', requestedItems: selectedItems });
-            } catch (err) { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK'; alertBox.textContent = "Error Sistem: " + err.message; alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2'; alertBox.classList.remove('hidden'); }
+                    .withFailureHandler(err => {
+                        btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK';
+                        alertBox.textContent = "Gagal menghubungi server: " + err.message;
+                        alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                        alertBox.classList.remove('hidden');
+                    })
+                    .submitRequest({
+                        employeeName: currentUser.nama,
+                        employeeEmail: currentUser.email,
+                        department: currentUser.divisi || currentUser.jabatan || '-',
+                        requestedItems: selectedItems
+                    });
+
+            } catch (err) {
+                btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-shopping-cart mr-2 text-lg"></i> Kirim Permintaan ATK';
+                alertBox.textContent = "Error Sistem: " + err.message;
+                alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                alertBox.classList.remove('hidden');
+            }
         }
 
-        window.loadUserRiwayatCuti = function() {
-            if(!currentUser) return;
+        // =================================================================
+        // RIWAYAT & CETAK FORM (HRD-007)
+        // =================================================================
+        window.loadUserRiwayatCuti = function () {
+            if (!currentUser) return;
             const tbody = document.getElementById('table-riwayat-cuti');
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6"><div class="spinner border-indigo-600"></div></td></tr>';
             google.script.run.withSuccessHandler(data => {
                 tbody.innerHTML = '';
-                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-sm text-gray-500">Belum ada pengajuan cuti.</td></tr>'; return; }
+                if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-sm text-gray-500">Belum ada pengajuan cuti.</td></tr>'; return; }
                 data.forEach(c => {
                     let st = c.status || 'Menunggu Persetujuan';
                     let sc = st.includes('Disetujui') ? 'text-green-700 bg-green-100' : (st.includes('Ditolak') ? 'text-red-700 bg-red-100' : 'text-amber-700 bg-amber-100');
                     let displayMulai = formatTglAman(c.tglMulai);
                     let displaySelesai = formatTglAman(c.tglSelesai);
                     const encodedData = encodeURIComponent(JSON.stringify(c));
-                    
-                    let actionBtn = `<button onclick="cetakFormCuti('${encodedData}')" class="bg-slate-800 hover:bg-slate-700 text-white p-1.5 rounded flex items-center justify-center transition" title="Cetak Form HRD-007"><i class="ph-bold ph-printer text-lg"></i></button>`;
-                    
+
+                    let actionBtn = `<button onclick="cetakFormCuti('${encodedData}', '${currentUser.id}')" class="bg-slate-800 hover:bg-slate-700 text-white p-1.5 rounded flex items-center justify-center transition" title="Cetak Form HRD-007"><i class="ph-bold ph-printer text-lg"></i></button>`;
+
                     tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="py-3 px-4 font-bold text-sm text-gray-800 whitespace-nowrap">${c.jenis}</td><td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${displayMulai} - ${displaySelesai}</td><td class="py-3 px-4 text-sm font-bold text-indigo-600">${c.lama} Hari</td><td class="py-3 px-4 text-center"><span class="px-2.5 py-1 text-xs font-bold rounded-full ${sc}">${st.split(':')[0]}</span></td><td class="py-3 px-4 flex justify-center">${actionBtn}</td></tr>`;
                 });
             }).withFailureHandler(err => { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-sm text-red-500 py-6">Gagal memuat: ${err.message}</td></tr>`; }).getUserCuti(currentUser.nama);
         }
 
-        window.cetakFormCuti = function(encodedData) {
+        // FUNGSI GENERATOR CETAK FORM HRD-007 (PRESISI TINGKAT TINGGI)
+        window.cetakFormCuti = function (encodedData, userNik) {
             const data = JSON.parse(decodeURIComponent(encodedData));
             const year = new Date(data.timestamp).getFullYear() || new Date().getFullYear();
             const tObj = new Date(data.timestamp);
-            const today = isNaN(tObj) ? '-' : tObj.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
-            
+            const today = isNaN(tObj) ? '-' : tObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
             const isTahunan = data.jenis === 'Cuti Tahunan' ? '☑' : '☐';
             const isHamil = data.jenis === 'Cuti Hamil/Melahirkan' ? '☑' : '☐';
             const isNikah = data.jenis === 'Cuti Menikah' ? '☑' : '☐';
             const isLain = (!['Cuti Tahunan', 'Cuti Hamil/Melahirkan', 'Cuti Menikah'].includes(data.jenis)) ? '☑' : '☐';
-            
+            const txtKeterangan = (isLain === '☑' && data.keterangan) ? `<br><span style="font-size: 13px;"><em>Keterangan: ${data.keterangan}</em></span>` : '';
+
+            const branding = currentUser.branding || window.COMPANY_BRANDING_ACTIVE || null;
+            let logoHtml = '';
+            let ptNameHtml = '<strong>PT. </strong><span class="dotted-line" style="width: 180px;"></span>';
+            if (branding && branding.namaLengkap) {
+                logoHtml = `<img src="${branding.logoBase64}" style="max-height: 50px; max-width: 180px; object-fit: contain;">`;
+                ptNameHtml = `<strong>${branding.namaLengkap}</strong>`;
+            }
+
             const valJabatan = data.jabatan || '<span class="dotted-line" style="width: 100%;"></span>';
             const valDivisi = data.divisi || '<span class="dotted-line" style="width: 100%;"></span>';
             const valPenempatan = data.penempatan || '<span class="dotted-line" style="width: 100%;"></span>';
             const valAlamat = data.alamat ? data.alamat + '<br><span class="dotted-line" style="width: 100%;"></span>' : '<span class="dotted-line" style="width: 100%;"></span><br><span class="dotted-line" style="width: 100%;"></span>';
             const valNoHp = data.noHp || '<span class="dotted-line" style="width: 100%;"></span>';
             const valPengganti = data.pengganti || '<span class="dotted-line" style="width: 100%;"></span>';
-            
+
             const tMulai = formatTglAman(data.tglMulai);
             const tSelesai = formatTglAman(data.tglSelesai);
 
-            let html = `<html><head><title>Cetak Form Cuti - ${data.nama}</title><style>@media print { @page { size: A4 portrait; margin: 15mm; } body { padding: 0 !important; -webkit-print-color-adjust: exact; } } body { font-family: 'Arial', sans-serif; color: #000; padding: 20px; font-size: 14px; line-height: 1.6; } .form-container { max-width: 800px; margin: 0 auto; } .header-table { width: 100%; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 20px; } .header-title { font-size: 18px; font-weight: bold; text-align: center; text-decoration: underline; } .info-table { border-collapse: collapse; font-size: 12px; float: right; width: 220px;} .info-table td { border: 1px solid #000; padding: 4px 6px; } .section-title { font-weight: normal; margin-top: 10px; margin-bottom: 10px; } .data-table { width: 100%; border-collapse: collapse; } .data-table td { padding: 6px 0; vertical-align: top; } .td-label { width: 26%; padding-left: 20px; } .td-colon { width: 3%; text-align: center; } .td-value { width: 71%; } .dotted-line { border-bottom: 1px dotted black; display: inline-block; min-height: 18px; vertical-align: bottom; } .signature-table { width: 100%; text-align: center; margin-top: 40px; } .signature-table td { width: 33.33%; padding-top: 10px; vertical-align: bottom; }</style></head><body><div class="form-container"><table class="header-table"><tr><td width="30%" style="vertical-align: top; padding-top: 15px;"><strong>PT. </strong><span class="dotted-line" style="width: 180px;"></span></td><td width="40%" class="header-title" style="vertical-align: middle;">FORM PERMOHONAN CUTI</td><td width="30%" style="vertical-align: top;"><table class="info-table"><tr><td width="45%">NO FORM</td><td>007/HRD/.....</td></tr><tr><td>NO REVISI</td><td></td></tr><tr><td>TANGGAL</td><td>02 Jan 2026</td></tr></table></td></tr></table><div style="text-align: left; padding-left: 20px; margin-bottom: 20px;">Tahun : <strong>${year}</strong></div><div class="section-title">Diisi oleh Karyawan</div><table class="data-table"><tr><td class="td-label">Nama</td><td class="td-colon">:</td><td class="td-value"><strong>${data.nama}</strong></td></tr><tr><td class="td-label">Jabatan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 80%;">${data.jabatan || ''}</span></td></tr><tr><td class="td-label">Divisi</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 80%;">${data.divisi || ''}</span></td></tr><tr><td class="td-label">Penempatan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 80%;">${data.penempatan || ''}</span></td></tr><tr><td class="td-label">Jenis Cuti</td><td class="td-colon">:</td><td class="td-value"><table style="width: 100%; border-collapse: collapse;"><tr><td style="width: 40%; padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isTahunan}</span> Cuti tahunan</td><td style="width: 60%; padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isHamil}</span> Cuti Hamil/Melahirkan</td></tr><tr><td style="padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isNikah}</span> Cuti Menikah</td><td style="padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isLain}</span> Lain - lain ${isLain === '☑' ? '(' + data.jenis + ')' : '<span class="dotted-line" style="width: 200px;"></span>'}</td></tr></table></td></tr><tr><td class="td-label">Lama Cuti</td><td class="td-colon">:</td><td class="td-value"><strong>${data.lama}</strong> Hari</td></tr><tr><td class="td-label">Tanggal Cuti</td><td class="td-colon">:</td><td class="td-value"><strong>${tMulai}</strong> s/d <strong>${tSelesai}</strong></td></tr><tr><td class="td-label">Alamat Selama Cuti</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 95%;">${data.alamat || ''}</span><br><span class="dotted-line" style="width: 95%;"></span></td></tr><tr><td class="td-label">No. Telepon / HP</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 60%;">${data.noHp || ''}</span></td></tr><tr><td class="td-label">Karyawan pengganti<br>Selama cuti</td><td class="td-colon"><br>:</td><td class="td-value"><br><table style="width: 100%; border-collapse: collapse;"><tr><td width="15%" style="padding: 2px 0;">Nama</td><td width="3%">:</td><td width="42%"><span class="dotted-line" style="width: 90%;">${data.pengganti || ''}</span></td><td width="15%">Ttd/Paraf</td><td width="3%">:</td><td width="22%"><span class="dotted-line" style="width: 100%;"></span></td></tr><tr><td style="padding: 2px 0;">Tanggal</td><td>:</td><td colspan="4"><span class="dotted-line" style="width: 40%;">${today}</span></td></tr></table></td></tr></table><br><div style="margin-top: 20px; margin-bottom: 5px;">Diisi oleh HRD</div><table class="data-table"><tr><td class="td-label">Tanggal Masuk Kerja</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 70%;"></span></td></tr><tr><td class="td-label">Sisa Cuti Tahunan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 70%;"></span></td></tr><tr><td class="td-label">Sisa Cuti Besar</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 70%;"></span></td></tr><tr><td class="td-label">Catatan dari Pimpinan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 95%;"></span><br><span class="dotted-line" style="width: 95%;"></span></td></tr><tr><td class="td-label">Tanggal Pengajuan</td><td class="td-colon">:</td><td class="td-value"><strong>${today}</strong></td></tr></table><table class="signature-table"><tr><td>Pemohon,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%; text-align: center;"><strong>${data.nama}</strong></span> )</td><td>Menyetujui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>LEADER/HEAD</td><td>Mengetahui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>HRD</td></tr></table></div><script>window.onload = function() { setTimeout(function(){ window.print(); window.close(); }, 500); }<\/script></body></html>`;
-            const printWindow = window.open('', '_blank'); printWindow.document.write(html); printWindow.document.close();
+            // === DYNAMIC CALCULATIONS FOR HRD SECTION ===
+            // 1. "Tanggal Masuk Kerja" = Return-to-work date (leave end + 1 business day)
+            let returnDateStr = '';
+            if (data.tglSelesai) {
+                let retDate = new Date(data.tglSelesai);
+                if (!isNaN(retDate)) {
+                    retDate.setDate(retDate.getDate() + 1); // Day after leave ends
+                    // Skip weekends: Sat(6)->Mon, Sun(0)->Mon
+                    while (retDate.getDay() === 0 || retDate.getDay() === 6) {
+                        retDate.setDate(retDate.getDate() + 1);
+                    }
+                    returnDateStr = retDate.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+                }
+            }
+            // 2. "Sisa Cuti Tahunan" = current balance - leave duration
+            let sisaCutiAfter = '';
+            const totalSisa = parseFloat(currentUser.sisaCuti);
+            const lamaCutiNum = parseFloat(data.lama);
+            if (!isNaN(totalSisa) && !isNaN(lamaCutiNum)) {
+                sisaCutiAfter = (totalSisa - lamaCutiNum) + ' Hari';
+            }
+
+            let html = `
+            <html>
+            <head>
+                <title>Cetak Form Cuti - ${data.nama}</title>
+                <style>
+                    @media print {
+                        @page { size: A4 portrait; margin: 15mm; }
+                        body { padding: 0 !important; -webkit-print-color-adjust: exact; }
+                    }
+                    body { font-family: 'Arial', sans-serif; color: #000; padding: 20px; font-size: 14px; line-height: 1.6; }
+                    .form-container { max-width: 800px; margin: 0 auto; }
+                    
+                    .header-table { width: 100%; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-title { font-size: 18px; font-weight: bold; text-align: center; text-decoration: underline; }
+                    
+                    .info-table { border-collapse: collapse; font-size: 12px; float: right; width: 220px;}
+                    .info-table td { border: 1px solid #000; padding: 4px 6px; }
+
+                    .section-title { font-weight: normal; margin-top: 10px; margin-bottom: 10px; }
+                    
+                    .data-table { width: 100%; border-collapse: collapse; }
+                    .data-table td { padding: 6px 0; vertical-align: top; }
+                    .td-label { width: 26%; padding-left: 20px; }
+                    .td-colon { width: 3%; text-align: center; }
+                    .td-value { width: 71%; }
+                    
+                    .dotted-line { border-bottom: 1px dotted black; display: inline-block; min-height: 18px; vertical-align: bottom; }
+                    
+                    .signature-table { width: 100%; text-align: center; margin-top: 40px; }
+                    .signature-table td { width: 33.33%; padding-top: 10px; vertical-align: bottom; }
+                </style>
+            </head>
+            <body>
+                <div class="form-container">
+                    
+                    <!-- HEADER -->
+                    <table class="header-table">
+                        <tr>
+                            <td width="30%" style="vertical-align: top; padding-top: 15px; text-align: left;">
+                                ${logoHtml}
+                            </td>
+                            <td width="40%" class="header-title" style="vertical-align: middle;">
+                                FORM PERMOHONAN CUTI<br>
+                                <span style="font-size: 14px; font-weight: normal;">${ptNameHtml}</span>
+                            </td>
+                            <td width="30%" style="vertical-align: top;">
+                                <table class="info-table">
+                                    <tr><td width="45%">NO FORM</td><td>007/HRD/.....</td></tr>
+                                    <tr><td>NO REVISI</td><td></td></tr>
+                                    <tr><td>TANGGAL</td><td>02 Jan 2026</td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        Tahun : <strong>${year}</strong>
+                    </div>
+
+                    <!-- BAGIAN KARYAWAN -->
+                    <div class="section-title" style="font-weight: bold; font-size: 16px;">Diisi oleh Karyawan</div>
+                    <table class="data-table">
+                        <tr><td class="td-label">Nama / NIK / Jabatan</td><td class="td-colon">:</td><td class="td-value"><strong>${data.nama}</strong> / <strong>${userNik || '-'}</strong> / <strong>${data.jabatan || '-'}</strong></td></tr>
+                        <tr><td class="td-label">Divisi</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 80%;">${data.divisi || ''}</span></td></tr>
+                        <tr><td class="td-label">Penempatan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 80%;">${data.penempatan || ''}</span></td></tr>
+                        <tr>
+                            <td class="td-label">Jenis Cuti</td><td class="td-colon">:</td>
+                            <td class="td-value">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="width: 40%; padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isTahunan}</span> Cuti tahunan</td>
+                                        <td style="width: 60%; padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isHamil}</span> Cuti Hamil/Melahirkan</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isNikah}</span> Cuti Menikah</td>
+                                        <td style="padding: 2px 0;"><span style="font-size: 18px; vertical-align: middle;">${isLain}</span> Lain - lain ${isLain === '☑' ? '(' + data.jenis + ')' : '<span class="dotted-line" style="width: 200px;"></span>'} ${txtKeterangan}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr><td class="td-label">Lama Cuti</td><td class="td-colon">:</td><td class="td-value"><strong>${data.lama}</strong> Hari</td></tr>
+                        <tr><td class="td-label">Tanggal Cuti</td><td class="td-colon">:</td><td class="td-value"><strong>${tMulai}</strong> s/d <strong>${tSelesai}</strong></td></tr>
+                        <tr><td class="td-label">ALAMAT SELAMA CUTI:</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 95%;">${data.alamat || ''}</span><br><span class="dotted-line" style="width: 95%;"></span></td></tr>
+                        <tr><td class="td-label">No. Telepon / HP</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 60%;">${data.noHp || ''}</span></td></tr>
+                        <tr>
+                            <td class="td-label">Karyawan pengganti<br>Selama cuti</td><td class="td-colon"><br>:</td>
+                            <td class="td-value">
+                                <br>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td width="15%" style="padding: 2px 0;">Nama</td><td width="3%">:</td><td width="42%"><span class="dotted-line" style="width: 90%;">${data.pengganti || ''}</span></td>
+                                        <td width="15%">Ttd/Paraf</td><td width="3%">:</td><td width="22%"><span class="dotted-line" style="width: 100%;"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Tanggal</td><td>:</td><td colspan="4"><span class="dotted-line" style="width: 40%;">${today}</span></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <br>
+                    
+                    <!-- BAGIAN HRD -->
+                    <div style="margin-top: 20px; margin-bottom: 5px; font-weight: bold; font-size: 16px;">Diisi oleh HRD</div>
+                    <table class="data-table">
+                        <tr><td class="td-label">Tanggal Masuk Kerja</td><td class="td-colon">:</td><td class="td-value"><strong>${returnDateStr || ''}</strong><span class="dotted-line" style="width: ${returnDateStr ? '20%' : '70%'};"></span></td></tr>
+                        <tr><td class="td-label">Sisa Cuti Tahunan</td><td class="td-colon">:</td><td class="td-value"><strong>${sisaCutiAfter || ''}</strong><span class="dotted-line" style="width: ${sisaCutiAfter ? '40%' : '70%'};"></span></td></tr>
+                        <tr><td class="td-label">Sisa Cuti Besar</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 70%;"></span></td></tr>
+                        <tr><td class="td-label">Catatan dari Pimpinan</td><td class="td-colon">:</td><td class="td-value"><span class="dotted-line" style="width: 95%;"></span><br><span class="dotted-line" style="width: 95%;"></span></td></tr>
+                        <tr><td class="td-label">Tanggal Pengajuan</td><td class="td-colon">:</td><td class="td-value"><strong>${today}</strong></td></tr>
+                    </table>
+
+                    <!-- TANDA TANGAN -->
+                    <table class="signature-table">
+                        <tr>
+                            <td>Pemohon,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%; text-align: center;"><strong>${data.nama}</strong></span> )</td>
+                            <td>Menyetujui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>LEADER/HEAD</td>
+                            <td>Mengetahui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>HRD</td>
+                        </tr>
+                    </table>
+                    
+                </div>
+                <script>
+                    window.onload = function() { setTimeout(function(){ window.print(); window.close(); }, 500); }
+                <\/script>
+            </body>
+            </html>
+            `;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
         }
 
-        window.loadUserRiwayatAtk = function() {
-            if(!currentUser) return;
+        window.loadUserRiwayatAtk = function () {
+            if (!currentUser) return;
             const cont = document.getElementById('container-riwayat-atk');
             cont.innerHTML = '<div class="flex justify-center py-8"><div class="spinner border-blue-600"></div></div>';
             google.script.run.withSuccessHandler(data => {
                 cont.innerHTML = '';
-                if(data.length === 0) { cont.innerHTML = '<p class="text-center text-sm text-gray-500 py-4">Belum ada permintaan Barang.</p>'; return; }
+                if (data.length === 0) { cont.innerHTML = '<p class="text-center text-sm text-gray-500 py-4">Belum ada permintaan Barang.</p>'; return; }
                 data.forEach(req => {
                     let stColor = req.status === 'Disetujui' ? 'text-green-600' : (req.status.includes('Ditolak') ? 'text-red-600' : (req.status === 'Sudah Diambil' ? 'text-blue-600' : 'text-amber-600'));
                     let btnAction = '';
                     if (req.status === 'Disetujui') btnAction = `<button onclick="triggerUploadAtk(${req.rowNum})" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded shadow transition w-full sm:w-auto mt-2 sm:mt-0"><i class="ph-bold ph-camera mr-1"></i> Konfirmasi Ambil</button>`;
                     else if (req.status === 'Sudah Diambil' && req.proofLink) btnAction = `<a href="${req.proofLink}" target="_blank" class="bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-100 transition w-full sm:w-auto mt-2 sm:mt-0 inline-block text-center"><i class="ph-bold ph-image mr-1"></i> Lihat Foto</a>`;
-                    
+
                     let dateDisplay = formatTglAman(req.timestamp);
                     cont.innerHTML += `<div class="p-4 border border-gray-100 rounded-xl bg-gray-50 shadow-sm"><div class="flex flex-col sm:flex-row sm:justify-between sm:items-center"><div><p class="font-bold text-gray-800 mb-0.5">${req.itemName} <span class="text-indigo-600">(x${req.quantity})</span></p><p class="text-xs text-gray-500 mb-1">${dateDisplay}</p><p class="text-xs font-bold ${stColor}" id="atk-status-${req.rowNum}">Status: ${req.status}</p></div><div id="atk-action-${req.rowNum}" class="mt-2 sm:mt-0 text-right">${btnAction}</div></div></div>`;
                 });
@@ -747,7 +1669,7 @@
         }
 
         const fileInput = document.getElementById('photo-upload-input');
-        window.triggerUploadAtk = function(rowNum) { currentUploadRow = rowNum; fileInput.value = null; fileInput.click(); }
+        window.triggerUploadAtk = function (rowNum) { currentUploadRow = rowNum; fileInput.value = null; fileInput.click(); }
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file || !currentUploadRow) return;
             const actionArea = document.getElementById(`atk-action-${currentUploadRow}`); const originalHTML = actionArea.innerHTML;
@@ -766,22 +1688,162 @@
         // ==========================================
         // 5. PENGATURAN AKUN (UBAH PASSWORD)
         // ==========================================
-        document.getElementById('form-ubah-password-profil').addEventListener('submit', function(e) {
-            e.preventDefault(); const pLama = document.getElementById('p-lama').value, pBaru = document.getElementById('p-baru').value, pKonf = document.getElementById('p-konfirm').value; const alertBox = document.getElementById('p-alert'), btn = document.getElementById('btn-simpan-p');
-            if (pBaru !== pKonf) { alertBox.textContent = 'Password baru tidak cocok!'; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-red-100 text-red-700 border border-red-200 block text-center'; return; }
-            if (pBaru.length < 6) { alertBox.textContent = 'Password minimal 6 karakter.'; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-amber-100 text-amber-800 border border-amber-200 block text-center'; return; }
-            btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white !w-5 !h-5 mr-2"></div> Menyimpan...'; alertBox.classList.add('hidden');
+        window.bukaModalPassword = function () { document.getElementById('form-ubah-password').reset(); document.getElementById('pass-alert').classList.add('hidden'); document.getElementById('password-modal').classList.remove('hidden'); }
+        window.tutupModalPassword = function () { document.getElementById('password-modal').classList.add('hidden'); }
+        document.getElementById('form-ubah-password').addEventListener('submit', function (e) {
+            e.preventDefault(); const pLama = document.getElementById('pass-lama').value, pBaru = document.getElementById('pass-baru').value, pKonf = document.getElementById('pass-konfirm').value; const alertBox = document.getElementById('pass-alert'), btn = document.getElementById('btn-simpan-pass');
+            if (pBaru !== pKonf) { alertBox.textContent = 'Password baru tidak cocok!'; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-red-100 text-red-700 border border-red-200 block'; return; }
+            if (pBaru.length < 6) { alertBox.textContent = 'Password minimal 6 karakter.'; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-amber-100 text-amber-800 border border-amber-200 block'; return; }
+            btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white !w-5 !h-5"></div> Menyimpan...'; alertBox.classList.add('hidden');
             google.script.run.withSuccessHandler(res => {
-                btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-key mr-2"></i> Update Password';
-                if(res.success) { 
-                    alertBox.textContent = res.message; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-green-100 text-green-700 border border-green-200 block text-center';
-                    document.getElementById('form-ubah-password-profil').reset();
-                } 
-                else { alertBox.textContent = res.message; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-red-100 text-red-700 border border-red-200 block text-center'; }
+                btn.disabled = false; btn.innerHTML = 'Simpan';
+                if (res.success) { alertBox.textContent = res.message; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-green-100 text-green-700 border border-green-200 block'; setTimeout(() => { localStorage.removeItem('userHRIS'); window.location.href = "<?= getScriptUrl() ?>?page=login"; }, 2000); }
+                else { alertBox.textContent = res.message; alertBox.className = 'text-sm font-bold p-3 rounded-lg mt-3 bg-red-100 text-red-700 border border-red-200 block'; }
             }).ubahPassword(currentUser.email, pLama, pBaru);
         });
 
-        window.logout = function() { if(confirm('Apakah Anda yakin ingin keluar?')) { localStorage.removeItem('userHRIS'); window.location.href = "<?= getScriptUrl() ?>?page=login"; } }
+        window.logout = function () {
+            Swal.fire({
+                title: '<span class="text-xl font-black text-slate-800">Konfirmasi Keluar</span>',
+                text: "Apakah Anda yakin ingin keluar dari sistem?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                customClass: {
+                    popup: 'rounded-3xl border-none shadow-2xl',
+                    confirmButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wide',
+                    cancelButton: 'rounded-xl px-6 py-3 font-bold uppercase tracking-wide'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('userHRIS');
+                    window.location.href = "<?= getScriptUrl() ?>?page=login";
+                }
+            });
+        }
+
+        window.toggleSidebar = function () {
+            const sidebar = document.getElementById('sidebar-user');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+
+            if (isOpen) {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            }
+        }
+
+        // NOTIFICATION LOGIC
+        window.checkNotifications = function () {
+            if (!currentUser) return;
+            google.script.run.withSuccessHandler(data => {
+                const lastCheck = localStorage.getItem(`notif_last_check_${currentUser.email}`) || 0;
+                let unreadCount = 0;
+                let latestTimestamp = 0;
+
+                data.cuti.concat(data.atk).forEach(item => {
+                    const ts = new Date(item.timestamp).getTime();
+                    if (ts > latestTimestamp) latestTimestamp = ts;
+                    if (ts > lastCheck && (item.status === 'Disetujui' || item.status.includes('Ditolak'))) {
+                        unreadCount++;
+                    }
+                });
+
+                const badge = document.getElementById('notif-badge');
+                if (unreadCount > 0) badge.classList.remove('hidden');
+                else badge.classList.add('hidden');
+
+                // Store latest checked timestamp
+                window.LATEST_NOTIF_DATA = data;
+            }).getUserNotifications(currentUser.email);
+        }
+
+        window.showNotifications = function () {
+            if (!window.LATEST_NOTIF_DATA) {
+                Swal.fire({
+                    title: '<div class="flex items-center justify-center gap-2"><i class="ph-fill ph-bell-ringing text-indigo-400"></i> <span class="text-xl font-black text-slate-800">Cek Notifikasi</span></div>',
+                    text: 'Sedang memuat data terbaru, harap tunggu sebentar...',
+                    icon: 'info',
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#4f46e5',
+                    customClass: {
+                        popup: 'rounded-3xl border-none shadow-2xl',
+                        confirmButton: 'rounded-xl px-8 py-3 font-bold uppercase tracking-wide'
+                    }
+                });
+                return;
+            }
+            const data = window.LATEST_NOTIF_DATA;
+            const lastCheck = localStorage.getItem(`notif_last_check_${currentUser.email}`) || 0;
+
+            let html = '<div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scroll">';
+            const allItems = data.cuti.map(c => ({ ...c, type: 'Cuti', icon: 'ph-calendar-blank', color: 'text-blue-600' }))
+                .concat(data.atk.map(a => ({ ...a, type: 'Logistik', icon: 'ph-package', color: 'text-amber-600' })))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (allItems.length === 0) {
+                html += `
+                <div class="flex flex-col items-center justify-center py-10 opacity-60 italic">
+                    <i class="ph-fill ph-bell-slash text-5xl text-slate-200 mb-3"></i>
+                    <p class="text-slate-500 font-medium">Belum ada pembaruan status.</p>
+                </div>`;
+            } else {
+                allItems.forEach(item => {
+                    const isNew = new Date(item.timestamp).getTime() > parseInt(lastCheck);
+                    let stColor = 'text-slate-600';
+                    if (item.status === 'Disetujui') stColor = 'text-emerald-600';
+                    else if (item.status.includes('Ditolak')) stColor = 'text-rose-600';
+
+                    html += `
+                    <div class="p-4 rounded-2xl border ${isNew ? 'bg-indigo-50/80 border-indigo-200 ring-1 ring-indigo-200' : 'bg-white border-slate-100'} shadow-sm transition-all hover:scale-[1.01]">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center flex-shrink-0 ${item.color} text-2xl">
+                                <i class="ph-fill ${item.icon}"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-400">${item.type}</span>
+                                    <span class="text-[10px] text-slate-400 font-bold">${formatTglAman(item.timestamp)}</span>
+                                </div>
+                                <p class="text-sm font-black text-slate-800 leading-tight mb-1">${item.type === 'Cuti' ? item.jenis : item.itemName}</p>
+                                <div class="flex items-center gap-2">
+                                    <div class="h-1.5 w-1.5 rounded-full ${isNew ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300'}"></div>
+                                    <p class="text-xs font-black ${stColor} uppercase tracking-tighter">Status: ${item.status}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+
+            Swal.fire({
+                title: '<div class="flex items-center justify-center gap-2"><i class="ph-fill ph-bell-ringing text-indigo-600"></i> <span class="text-xl font-black text-slate-800">Notifikasi</span></div>',
+                html: html,
+                confirmButtonText: 'Tandai Sudah Dibaca',
+                confirmButtonColor: '#4f46e5',
+                width: '450px',
+                customClass: {
+                    popup: 'rounded-3xl border-none shadow-2xl',
+                    confirmButton: 'rounded-xl px-8 py-3 font-bold uppercase tracking-wide'
+                }
+            }).then(() => {
+                localStorage.setItem(`notif_last_check_${currentUser.email}`, Date.now());
+                document.getElementById('notif-badge').classList.add('hidden');
+            });
+        }
+
+        // Check notif every 1 minute
+        setInterval(checkNotifications, 60000);
+        setTimeout(checkNotifications, 2000);
     </script>
 </body>
+
 </html>
