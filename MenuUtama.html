@@ -170,7 +170,8 @@
 
             <div class="h-px w-24 bg-indigo-400 mx-auto my-6 opacity-50"></div>
 
-            <p class="text-white/90 text-base md:text-lg font-light italic mb-10">"Semoga hari Anda penuh energi dan semangat yang produktif"</p>
+            <p class="text-white/90 text-base md:text-lg font-light italic mb-10">"Semoga hari Anda penuh energi dan
+                semangat yang produktif"</p>
 
             <button onclick="switchTab('dashboard')"
                 class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-indigo-500/50 flex items-center mx-auto text-lg border border-indigo-400">
@@ -574,6 +575,15 @@
                                         <div class="spinner border-blue-600"></div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div>
+                                <h3
+                                    class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    III. Keterangan / Catatan Tambahan (Wajib)
+                                </h3>
+                                <textarea id="atk-keterangan" class="input-custom" rows="2"
+                                    placeholder="Tuliskan alasan keperluan atau urgensi permintaan barang ini..."></textarea>
                             </div>
 
                             <div id="alert-atk"
@@ -1384,6 +1394,14 @@
                     if (qty > 0) { selectedItems.push({ name: cb.getAttribute('data-name'), quantity: qty }); }
                 });
 
+                const keterangan = document.getElementById('atk-keterangan').value.trim();
+                if (!keterangan) {
+                    alertBox.textContent = 'Harap isi alasan keperluan/urgensi di kolom Keterangan!';
+                    alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
+
                 if (selectedItems.length === 0) {
                     alertBox.textContent = 'Pilih minimal satu barang!';
                     alertBox.className = 'p-3 rounded-lg text-sm font-bold text-center border bg-red-100 text-red-800 block mb-2';
@@ -1408,6 +1426,7 @@
                                 row.querySelector('.atk-quantity').classList.add('hidden');
                                 row.classList.remove('bg-blue-50');
                             });
+                            document.getElementById('atk-keterangan').value = '';
 
                             setTimeout(() => switchTab('riwayat'), 1500);
                         }
@@ -1427,7 +1446,8 @@
                         employeeName: currentUser.nama,
                         employeeEmail: currentUser.email,
                         department: currentUser.divisi || currentUser.jabatan || '-',
-                        requestedItems: selectedItems
+                        requestedItems: selectedItems,
+                        keterangan: document.getElementById('atk-keterangan').value.trim()
                     });
 
             } catch (err) {
@@ -1521,8 +1541,10 @@
                 <title>Cetak Form Cuti - ${data.nama}</title>
                 <style>
                     @media print {
-                        @page { size: A4 portrait; margin: 15mm; }
-                        body { padding: 0 !important; -webkit-print-color-adjust: exact; }
+                        @page { size: A4 portrait; margin: 5mm; }
+                        body { padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .form-container { transform: scale(0.95); transform-origin: top center; }
+                        .signature-table { page-break-inside: avoid; }
                     }
                     body { font-family: 'Arial', sans-serif; color: #000; padding: 20px; font-size: 14px; line-height: 1.6; }
                     .form-container { max-width: 800px; margin: 0 auto; }
@@ -1631,15 +1653,45 @@
                     <!-- TANDA TANGAN -->
                     <table class="signature-table">
                         <tr>
-                            <td>Pemohon,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%; text-align: center;"><strong>${data.nama}</strong></span> )</td>
-                            <td>Menyetujui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>LEADER/HEAD</td>
-                            <td>Mengetahui,<br><br><br><br><br>( <span class="dotted-line" style="width: 70%;"></span> )<br>HRD</td>
+                            <td style="vertical-align: middle; text-align: center; padding: 10px;">
+                                Pemohon,
+                                <div style="height: 60px;"></div>
+                                <div style="text-decoration: underline; font-weight: bold; font-size: 14px; margin-bottom: 2px;">${data.nama}</div>
+                                <div style="font-size: 12px;">KARYAWAN</div>
+                            </td>
+                            <td id="sig-leader" style="vertical-align: middle; text-align: center; padding: 10px;">
+                                Menyetujui,
+                                <div style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <span id="approved-badge" style="display: none; color: #16a34a; border: 2px dashed #16a34a; padding: 4px 8px; font-size: 11px; font-weight: 900; border-radius: 4px; transform: rotate(-5deg); white-space: nowrap;">&#10004; APPROVED BY SYSTEM</span>
+                                </div>
+                                <div id="approver-name-line" style="text-decoration: underline; font-weight: bold; font-size: 14px; margin-bottom: 2px;">${data.approverName || ''}</div>
+                                <div style="font-size: 12px;">LEADER/HEAD</div>
+                            </td>
+                            <td style="vertical-align: middle; text-align: center; padding: 10px;">
+                                Mengetahui,
+                                <div style="height: 60px;"></div>
+                                <div style="text-decoration: underline; font-weight: bold; font-size: 14px; margin-bottom: 2px;"><span class="dotted-line" style="width: 80%;"></span></div>
+                                <div style="font-size: 12px;">HRD</div>
+                            </td>
                         </tr>
                     </table>
                     
                 </div>
                 <script>
-                    window.onload = function() { setTimeout(function(){ window.print(); window.close(); }, 500); }
+                    window.onload = function() {
+                        var statusVal = '${data.status || ''}';
+                        if (statusVal === 'Disetujui') {
+                            var badge = document.getElementById('approved-badge');
+                            if (badge) badge.style.display = 'inline-block';
+
+                            // If no approver name was pre-filled (old records), show fallback
+                            var nameLine = document.getElementById('approver-name-line');
+                            if (nameLine && !nameLine.textContent.trim()) {
+                                nameLine.textContent = 'Atasan System';
+                            }
+                        }
+                        setTimeout(function(){ window.print(); window.close(); }, 600);
+                    }
                 <\/script>
             </body>
             </html>
@@ -1748,11 +1800,14 @@
                 let unreadCount = 0;
                 let latestTimestamp = 0;
 
-                data.cuti.concat(data.atk).forEach(item => {
+                data.cuti.concat(data.atk).concat(data.pengumuman || []).forEach(item => {
                     const ts = new Date(item.timestamp).getTime();
                     if (ts > latestTimestamp) latestTimestamp = ts;
-                    if (ts > lastCheck && (item.status === 'Disetujui' || item.status.includes('Ditolak'))) {
-                        unreadCount++;
+                    if (ts > lastCheck) {
+                        const isPengumuman = !item.status;
+                        if (isPengumuman || item.status === 'Disetujui' || item.status.includes('Ditolak')) {
+                            unreadCount++;
+                        }
                     }
                 });
 
@@ -1762,7 +1817,7 @@
 
                 // Store latest checked timestamp
                 window.LATEST_NOTIF_DATA = data;
-            }).getUserNotifications(currentUser.email);
+            }).getUserNotifications(currentUser);
         }
 
         window.showNotifications = function () {
@@ -1786,6 +1841,7 @@
             let html = '<div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scroll">';
             const allItems = data.cuti.map(c => ({ ...c, type: 'Cuti', icon: 'ph-calendar-blank', color: 'text-blue-600' }))
                 .concat(data.atk.map(a => ({ ...a, type: 'Logistik', icon: 'ph-package', color: 'text-amber-600' })))
+                .concat((data.pengumuman || []).map(p => ({ ...p, type: 'Informasi', icon: 'ph-megaphone', color: 'text-purple-600', itemName: p.judul, status: 'Baru', _isPengumuman: true })))
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             if (allItems.length === 0) {
@@ -1798,7 +1854,7 @@
                 allItems.forEach(item => {
                     const isNew = new Date(item.timestamp).getTime() > parseInt(lastCheck);
                     let stColor = 'text-slate-600';
-                    if (item.status === 'Disetujui') stColor = 'text-emerald-600';
+                    if (item.status === 'Disetujui' || item._isPengumuman) stColor = 'text-emerald-600';
                     else if (item.status.includes('Ditolak')) stColor = 'text-rose-600';
 
                     html += `

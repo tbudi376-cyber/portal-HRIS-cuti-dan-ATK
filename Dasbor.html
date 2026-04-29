@@ -861,6 +861,13 @@
                 <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Kuota Statis (Sheet
                         Backup)</label><input type="number" id="ek-statis" class="input-mobile bg-slate-50" required>
                 </div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase">WFA Lebaran Exception</label>
+                    <select id="ek-wfa" class="input-mobile bg-slate-50">
+                        <option value="">Kosong</option>
+                        <option value="Ya">Ya</option>
+                        <option value="Tidak">Tidak</option>
+                    </select>
+                </div>
                 <div class="bg-violet-100/50 p-3 rounded-xl border border-violet-200">
                     <p class="text-xs text-violet-700 font-semibold mb-1">Sisa Kuota Tersedia (FIFO):</p>
                     <p id="ek-fifo-display" class="text-xl font-black text-violet-900">-</p>
@@ -1165,7 +1172,7 @@
                 printWindow.document.close();
             }
             window.showInfoCuti = function (encodedData) { const req = JSON.parse(decodeURIComponent(encodedData)); document.getElementById('info-cuti-content').innerHTML = `<table class="w-full text-left"><tr class="border-b border-slate-100"><td class="py-2 text-slate-500 w-1/3">Nama Lengkap</td><td class="py-2 font-bold text-slate-800">${req.nama}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Divisi</td><td class="py-2 font-semibold text-slate-800">${req.divisi}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Jenis Cuti</td><td class="py-2 font-bold text-blue-600">${req.jenis}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Periode</td><td class="py-2 font-semibold text-slate-800">${new Date(req.tglMulai).toLocaleDateString('id-ID')} s/d ${new Date(req.tglSelesai).toLocaleDateString('id-ID')}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Total Durasi</td><td class="py-2 font-bold text-slate-800">${req.lama} Hari</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Status Saat Ini</td><td class="py-2 font-semibold">${req.status}</td></tr><tr><td colspan="2" class="pt-4 pb-1 text-slate-500 font-bold text-xs uppercase tracking-wider">ALAMAT SELAMA CUTI:</td></tr><tr><td colspan="2" class="p-3 bg-slate-50 rounded-lg border border-slate-200 italic text-slate-700">"${req.alasan}"</td></tr></table>`; document.getElementById('info-cuti-modal').classList.remove('hidden'); }
-            window.approveCuti = function (rowNum, nama, lama) { document.getElementById(`action-cuti-${rowNum}`).innerHTML = '<div class="spinner !w-8 !h-8 border-2 border-blue-200 border-l-blue-600"></div>'; google.script.run.withSuccessHandler(res => { if (res.success) loadCutiRequests(); else alert(res.message); }).processCutiApproval(rowNum, true, '', nama, lama); }
+            window.approveCuti = function (rowNum, nama, lama) { document.getElementById(`action-cuti-${rowNum}`).innerHTML = '<div class="spinner !w-8 !h-8 border-2 border-blue-200 border-l-blue-600"></div>'; google.script.run.withSuccessHandler(res => { if (res.success) loadCutiRequests(); else alert(res.message); }).processCutiApproval(rowNum, true, '', nama, lama, currentUser.nama); }
 
             // KARYAWAN
             let extendedFieldsRaw = [];
@@ -1291,6 +1298,9 @@
                 container.classList.remove('hidden');
 
                 extendedFieldsRaw.forEach((label, i) => {
+                    // SKIP WFA Lebaran (moved to Master Cuti)
+                    if (label.toLowerCase() === 'wfa lebaran') return;
+
                     const div = document.createElement('div');
                     div.innerHTML = `
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">${label}</label>
@@ -1542,7 +1552,7 @@
                             <td class="px-5 py-4 whitespace-nowrap text-center"><span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-sm font-semibold border border-slate-200">${emp.staticQuota}</span></td>
                             <td class="px-5 py-4 whitespace-nowrap text-center"><span class="bg-rose-50 text-rose-600 px-2.5 py-1 rounded text-sm font-semibold border border-rose-200">${emp.cutiDiambil}</span></td>
                             <td class="px-5 py-4 whitespace-nowrap text-center"><span class="${quotaBadgeClass} px-3 py-1 rounded-lg font-black text-lg border">${emp.usableQuota}</span></td>
-                            <td class="px-5 py-4 whitespace-nowrap text-center"><button onclick="openEditMasterCuti('${emp.nik}', '${emp.nama}', '${emp.tanggalMasuk || ''}', '${emp.staticQuota}', '${emp.usableQuota}')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition shadow-sm"><i class="ph-bold ph-pencil-simple mr-1"></i>Edit</button></td>
+                            <td class="px-5 py-4 whitespace-nowrap text-center"><button onclick="openEditMasterCuti('${emp.nik}', '${emp.nama}', '${emp.tanggalMasuk || ''}', '${emp.staticQuota}', '${emp.usableQuota}', '${emp.wfaLebaran || ''}')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition shadow-sm"><i class="ph-bold ph-pencil-simple mr-1"></i>Edit</button></td>
                         </tr>`;
                     });
                 }).withFailureHandler(err => {
@@ -1555,10 +1565,10 @@
                     row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
                 });
             }
-            window.openEditMasterCuti = function (nik, nama, tanggalMasuk, staticQuota, fifo) {
+            window.openEditMasterCuti = function (nik, nama, tanggalMasuk, staticQuota, fifo, wfaLebaran) {
                 document.getElementById('ek-nik').value = nik;
                 document.getElementById('ek-nama').value = nama;
-
+ 
                 let isoDate = "";
                 if (tanggalMasuk) {
                     let d = new Date(tanggalMasuk);
@@ -1567,7 +1577,8 @@
                 document.getElementById('ek-tanggal').value = isoDate;
                 document.getElementById('ek-statis').value = staticQuota || 0;
                 document.getElementById('ek-fifo-display').textContent = (fifo || 0) + ' Hari';
-
+                document.getElementById('ek-wfa').value = wfaLebaran || "";
+ 
                 document.getElementById('modal-edit-kuota').classList.remove('hidden');
             };
             document.getElementById('form-edit-kuota').addEventListener('submit', function (e) {
@@ -1579,7 +1590,8 @@
                 const data = {
                     id: document.getElementById('ek-nik').value,
                     tanggalMasuk: document.getElementById('ek-tanggal').value,
-                    sisaCuti: document.getElementById('ek-statis').value
+                    sisaCuti: document.getElementById('ek-statis').value,
+                    wfaLebaran: document.getElementById('ek-wfa').value
                 };
 
                 google.script.run.withSuccessHandler(res => {
@@ -2020,7 +2032,7 @@
                 const rNum = globalRejectData.rowNum;
                 if (globalRejectData.type === 'cuti') {
                     document.getElementById(`action-cuti-${rNum}`).innerHTML = '<div class="spinner !w-6 !h-6"></div>';
-                    google.script.run.withSuccessHandler(res => loadCutiRequests()).processCutiApproval(rNum, false, reason, globalRejectData.nama, globalRejectData.lama);
+                    google.script.run.withSuccessHandler(res => loadCutiRequests()).processCutiApproval(rNum, false, reason, globalRejectData.nama, globalRejectData.lama, currentUser.nama);
                 } else {
                     document.getElementById(`action-atk-${rNum}`).innerHTML = '<div class="spinner !w-6 !h-6"></div>';
                     google.script.run.withSuccessHandler(res => loadAtkRequests()).processApproval(rNum, false, reason);

@@ -145,6 +145,24 @@
                     </div>
                 </div>
 
+                <!-- III. KETERANGAN / CATATAN TAMBAHAN -->
+                <div class="bg-amber-50 p-4 rounded-lg border border-amber-100">
+                    <h3 class="font-bold text-amber-800 text-sm uppercase mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                        III. Keterangan / Catatan Tambahan
+                    </h3>
+                    <div>
+                        <label class="label-mobile" for="keterangan">Alasan Keperluan / Urgensi (Wajib)</label>
+                        <textarea
+                            id="keterangan"
+                            class="input-mobile"
+                            rows="3"
+                            placeholder="Tuliskan alasan mengapa barang-barang ini dibutuhkan atau seberapa mendesak pengadaannya..."
+                        ></textarea>
+                        <p class="text-xs text-amber-700 mt-1">*Tambahkan keterangan jika ada kebutuhan khusus atau urgensi permintaan.</p>
+                    </div>
+                </div>
+
                 <!-- TOMBOL AKSI -->
                 <div class="pt-2 space-y-3">
                     <button type="submit" id="submit-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg text-lg transition transform active:scale-95">
@@ -185,6 +203,7 @@
             const employeeNameInput = document.getElementById('employeeName');
             const employeeEmailInput = document.getElementById('employeeEmail');
             const departmentInput = document.getElementById('department');
+            const keteranganInput = document.getElementById('keterangan');
             const successModal = document.getElementById('success-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
 
@@ -329,6 +348,12 @@
 
                 if (selectedItems.length === 0) { showNotification('Pilih minimal satu item ATK/P3K.', false); return; }
                 
+                const keteranganVal = keteranganInput.value.trim();
+                if (!keteranganVal) {
+                    showNotification('Harap isi alasan keperluan/urgensi di kolom Keterangan!', false);
+                    return;
+                }
+                
                 submitButton.disabled = true;
                 submitButton.innerHTML = '<div class="spinner"></div> Mengirim...';
                 
@@ -348,7 +373,8 @@
                         employeeName: employeeNameInput.value, 
                         employeeEmail: email, 
                         department: departmentInput.value, 
-                        requestedItems: selectedItems 
+                        requestedItems: selectedItems,
+                        keterangan: keteranganInput.value.trim()
                     });
             });
         });

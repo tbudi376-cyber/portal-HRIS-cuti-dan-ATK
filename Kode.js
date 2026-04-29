@@ -305,8 +305,22 @@ function submitRequest(formData) {
     if (!sheet) throw new Error("Sheet Permintaan ATK tidak ditemukan.");
     const timestamp = new Date();
     const requestId = `REQ-${timestamp.getTime()}`;
+    // Kolom: 1=RequestID, 2=Timestamp, 3=Nama, 4=Email, 5=Departemen, 6=Nama Barang,
+    //        7=Jumlah, 8=Status, 9=Link Bukti, 10=Keterangan
+    const keterangan = formData.keterangan || '';
     formData.requestedItems.forEach(item => {
-      sheet.appendRow([requestId, timestamp, formData.employeeName, formData.employeeEmail, formData.department, item.name, item.quantity, 'Menunggu Persetujuan', '']);
+      sheet.appendRow([
+        requestId, 
+        timestamp, 
+        formData.employeeName, 
+        formData.employeeEmail, 
+        formData.department, 
+        item.name, 
+        item.quantity, 
+        'Menunggu Persetujuan', 
+        '', 
+        formData.keterangan || ''
+      ]);
     });
     try { MailApp.sendEmail({ to: ADMIN_EMAIL, subject: `[Logistik] Permintaan Barang Baru: ${formData.employeeName}`, body: `Ada permintaan ATK baru dari ${formData.employeeName}.`, name: SENDER_NAME }); } catch (e) { }
     return { success: true, message: 'Permintaan ATK berhasil dikirim.' };
@@ -352,7 +366,8 @@ function getUserCuti(nama) {
           divisi: data[i][3], penempatan: data[i][4], jenis: data[i][5],
           tglMulai: data[i][6], tglSelesai: data[i][7], lama: data[i][8],
           alamat: data[i][9], noHp: data[i][10], pengganti: data[i][11],
-          status: st, keterangan: data[i][13] || ''
+          status: st, keterangan: data[i][13] || '',
+          approverName: data[i][14] ? data[i][14].toString().trim() : ''
         });
       }
     }
@@ -360,12 +375,39 @@ function getUserCuti(nama) {
   } catch (e) { return []; }
 }
 
+function getUserNotifications(user) {
+  if (!user) return { cuti: [], atk: [], pengumuman: [] };
+  const cuti = getUserCuti(user.nama);
+  const atk = getUserRequests(user.email);
+  
+  let pengumuman = [];
+  try {
+    const sheetP = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman');
+    if (sheetP) {
+      const dP = sheetP.getDataRange().getDisplayValues();
+      for (let i = 1; i < dP.length; i++) {
+         if (dP[i][0]) {
+            pengumuman.push({
+              judul: dP[i][0],
+              timestamp: dP[i][1],
+              isi: dP[i][2],
+              warna: dP[i][3],
+              lampiran: dP[i][4] || null
+            });
+         }
+      }
+    }
+  } catch (e) {}
+
+  return { cuti: cuti, atk: atk, pengumuman: pengumuman };
+}
+
 function confirmPickupWithPhoto(fileData, rowNum) {
   try {
     const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME);
     const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
     const blob = Utilities.newBlob(Utilities.base64Decode(fileData.base64Data.split(',')[1]), fileData.mimeType || 'image/png', fileData.fileName);
-    const fileUrl = folder.createFile(blob).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW).getUrl();
+    const fileUrl = folder.createFile(blob).getUrl();
     sheet.getRange(rowNum, 8).setValue('Sudah Diambil');
     sheet.getRange(rowNum, 9).setValue(fileUrl);
     return { success: true, newStatus: 'Sudah Diambil', proofLink: fileUrl };
@@ -418,6 +460,7 @@ function getAllCuti(callerEmail) {
       alasan: data[i][9],
       status: data[i][12],
       keterangan: data[i][13] || '',
+      approverName: data[i][14] ? data[i][14].toString().trim() : '',
       ptName: empPtName
     });
   }
@@ -436,7 +479,7 @@ function getAllCuti(callerEmail) {
  *
  * 2. Logika status dan pengiriman email tetap sama.
  */
-function processCutiApproval(rowNum, isApproved, reason, namaKaryawan, lamaCuti) {
+function processCutiApproval(rowNum, isApproved, reason, namaKaryawan, lamaCuti, approverName) {
   try {
     const sheetCuti = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(CUTI_SHEET_NAME);
     const dataCuti = sheetCuti.getDataRange().getValues();
@@ -444,6 +487,11 @@ function processCutiApproval(rowNum, isApproved, reason, namaKaryawan, lamaCuti)
 
     // Update status di kolom 13 (1-indexed) = index 12 (0-indexed)
     sheetCuti.getRange(rowNum, 13).setValue(status);
+
+    // Simpan nama approver di kolom 15 (1-indexed) = index 14 (0-indexed)
+    if (approverName) {
+      sheetCuti.getRange(rowNum, 15).setValue(approverName);
+    }
 
     // Kirim notifikasi email ke karyawan
     const reqData = dataCuti[rowNum - 1];
@@ -510,7 +558,7 @@ function getExtendedHeaders() {
 
 
 // ============================================================
-// DYNAMIC LEAVE ACCRUAL ENGINE — FIFO + 6-MONTH ROLLING EXPIRY
+// DYNAMIC LEAVE ACCRUAL ENGINE — FIFO + MARCH 31ST EXPIRY
 // ============================================================
 
 /**
@@ -567,23 +615,24 @@ function getMassLeaveDatesFromSS(ss) {
  * 2. Karyawan join 2026+: Mendapat 1 accrual setelah melewati tiap 1 bulan.
  *    Accrual pertama = 1 bulan setelah tanggal join.
  *
- * 3. Setiap accrual berlaku 6 bulan sejak diperoleh (rolling). Setelah itu hangus.
- *    Contoh: accrual Januari 2026 → berlaku s.d. 31 Juni 2026 (expiry 1 Juli).
+ * 3. Setiap accrual yang diperoleh dalam tahun Y akan hangus pada 31 Maret tahun Y+1.
+ *    (Menggantikan aturan lama 6-bulan rolling.)
  *
- * 4. Cuti Bersama Idul Fitri otomatis dipotong dari accrual AKHIR TAHUN (LIFO dalam tahun).
- *    Misal 3 hari Cuti Bersama → gunakan accrual Desember, November, Oktober.
+ * 4. Cuti Bersama Idul Fitri otomatis dipotong dari accrual AKHIR TAHUN (LIFO dalam tahun),
+ *    KECUALI jika karyawan berstatus WFA Lebaran (isWFALebaran=true) → potongan dilewati.
  *
  * 5. Karyawan yang join SETELAH tanggal Cuti Bersama tidak kena potongan.
  *
  * 6. Penggunaan cuti reguler memakai accrual TERLAMA yang valid (FIFO) untuk mencegah hangus.
  *
- * @param {string} tanggalMasukStr  - Tanggal masuk karyawan
- * @param {Array}  approvedLeaves   - [{tglMulai, lama}] cuti yang sudah disetujui
- * @param {*}      statisQuotaRaw   - Sisa cuti 2025 dari spreadsheet (legacy quota)
- * @param {Date[]} massLeaveDates   - Tanggal-tanggal Cuti Bersama Idul Fitri
+ * @param {string}  tanggalMasukStr  - Tanggal masuk karyawan
+ * @param {Array}   approvedLeaves   - [{tglMulai, lama}] cuti yang sudah disetujui
+ * @param {*}       statisQuotaRaw   - Sisa cuti 2025 dari spreadsheet (legacy quota)
+ * @param {Date[]}  massLeaveDates   - Tanggal-tanggal Cuti Bersama Idul Fitri
+ * @param {boolean} isWFALebaran     - Jika true, potongan Cuti Bersama LIFO dilewati
  * @returns {number} Jumlah hari cuti yang bisa dipakai hari ini
  */
-function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, massLeaveDates) {
+function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, massLeaveDates, isWFALebaran) {
   if (!tanggalMasukStr) return 0;
 
   const joinDate = parseIndoDate(tanggalMasukStr);
@@ -618,55 +667,84 @@ function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, m
     // KARYAWAN BARU (join 2026+):
     // Accrual pertama = 1 bulan setelah join.
     currentAccrualDate = new Date(joinDate);
+    currentAccrualDate.setHours(0, 0, 0, 0); // Normalize time to midnight (fix time-precision bug)
     currentAccrualDate.setMonth(currentAccrualDate.getMonth() + 1);
     currentAccrualDate.setDate(1); // Normalisasi ke tanggal 1
   }
 
-  // ── LANGKAH 2: GENERATE ACCRUAL BULANAN s.d. AKHIR TAHUN BERJALAN ───────
-  const endOfYear = new Date(today.getFullYear(), 11, 31);
-  while (currentAccrualDate <= endOfYear) {
+  // ── LANGKAH 2: GENERATE ACCRUAL BULANAN s.d. 1 JAN TAHUN BERIKUTNYA ──────
+  // Loop diperluas hingga Jan 1 Y+1 agar accrual Desember (drop Jan 1) terlihat engine.
+  //
+  // 3-CONDITION HYBRID EXPIRY SYSTEM (berdasarkan bulan drop/earned):
+  //   - Drop Jan  (bulan 0)  : Desember selesai → hangus 31 Mar TAHUN YANG SAMA.
+  //   - Drop Feb–Okt (bulan 1–9): Standard 6-bulan rolling.
+  //   - Drop Nov–Des (bulan 10–11): Okt & Nov selesai → hangus 31 Mar TAHUN BERIKUTNYA.
+  const endOfPeriod = new Date(today.getFullYear() + 1, 0, 1, 23, 59, 59); // Jan 1 Y+1 end-of-day
+  while (currentAccrualDate <= endOfPeriod) {
     let earned = new Date(currentAccrualDate);
-    let expiry = new Date(earned);
-    expiry.setMonth(expiry.getMonth() + 6); // Berlaku 6 bulan
+    let expiry;
+    let month = earned.getMonth(); // 0-indexed
+
+    if (month === 0) {
+      // Drops Jan 1st (Dec work completion) → Expires March 31 of the SAME year
+      expiry = new Date(earned.getFullYear(), 2, 31, 23, 59, 59);
+    } else if (month >= 1 && month <= 9) {
+      // Drops Feb to Oct → Standard 6-month rolling
+      expiry = new Date(earned);
+      expiry.setMonth(expiry.getMonth() + 6);
+    } else {
+      // Drops Nov & Dec (Oct & Nov work completion) → Expires March 31 of the NEXT year
+      expiry = new Date(earned.getFullYear() + 1, 2, 31, 23, 59, 59);
+    }
+
     accruals.push({ earned: earned, expiry: expiry, isUsed: false });
     currentAccrualDate.setMonth(currentAccrualDate.getMonth() + 1);
   }
 
-  // ── LANGKAH 3: DEDUCT CUTI BERSAMA IDUL FITRI (LIFO DARI AKHIR TAHUN) ───
-  // Untuk setiap hari Cuti Bersama:
-  //   - Ambil accrual TERBARU dalam tahun yang sama (LIFO: Des → Nov → Okt → dst)
-  //   - Tandai sebagai used
-  //   - Karyawan yang join SETELAH tanggal Cuti Bersama: dilewati
+  // ── LANGKAH 3: DEDUCT CUTI BERSAMA IDUL FITRI (LIFO — POOL DIBATASI) ────
+  // Jika karyawan adalah WFA Lebaran, blok ini sepenuhnya dilewati.
   //
-  // Ini memenuhi requirement #4 dan #5.
-  (massLeaveDates || []).forEach(massDay => {
-    // Requirement #6: Lewati jika karyawan baru join setelah hari Cuti Bersama ini
-    if (massDay < joinDate) return;
+  // Pool LIFO hanya mencakup accrual dari penyelesaian kerja Okt, Nov, Des:
+  //   - Nov & Des targetYear  (drop bulan 10 & 11 di tahun Cuti Bersama)
+  //   - Jan targetYear+1      (drop bulan 0, yaitu penyelesaian kerja Desember)
+  // Karyawan yang join SETELAH tanggal Cuti Bersama: dilewati.
+  if (!isWFALebaran) {
+    (massLeaveDates || []).forEach(massDay => {
+      // Lewati jika karyawan baru join setelah hari Cuti Bersama ini
+      if (massDay < joinDate) return;
 
-    const targetYear = massDay.getFullYear();
+      const targetYear = massDay.getFullYear();
 
-    // Cari accrual tahun yang sama, belum dipakai, belum expired saat Cuti Bersama terjadi
-    const validAccruals = accruals.filter(acc =>
-      !acc.isUsed &&
-      acc.earned.getFullYear() === targetYear &&
-      acc.expiry > massDay
-    );
+      // Pool terbatas: hanya Nov/Des targetYear ATAU Jan targetYear+1
+      const validAccruals = accruals.filter(acc => {
+        if (acc.isUsed || acc.expiry <= massDay) return false;
 
-    if (validAccruals.length > 0) {
-      // LIFO: sort descending → ambil accrual paling akhir tahun (Des, Nov, Okt, ...)
-      validAccruals.sort((a, b) => b.earned - a.earned);
-      validAccruals[0].isUsed = true;
-    } else {
-      // Fallback: jika tidak ada accrual tahun yang sama yang cocok,
-      // cari accrual valid FIFO dari mana saja
-      const fallback = accruals.find(acc =>
-        !acc.isUsed &&
-        acc.earned <= massDay &&
-        acc.expiry > massDay
-      );
-      if (fallback) fallback.isUsed = true;
-    }
-  });
+        const earnedYear  = acc.earned.getFullYear();
+        const earnedMonth = acc.earned.getMonth();
+
+        // Nov & Dec of targetYear (Oct & Nov work completions)
+        const isNovDec      = (earnedYear === targetYear && (earnedMonth === 10 || earnedMonth === 11));
+        // Jan of targetYear+1 (Dec work completion)
+        const isJanNextYear = (earnedYear === targetYear + 1 && earnedMonth === 0);
+
+        return isNovDec || isJanNextYear;
+      });
+
+      if (validAccruals.length > 0) {
+        // LIFO: ambil accrual paling akhir dalam pool (Des > Nov > Jan Y+1 setelah sort)
+        validAccruals.sort((a, b) => b.earned - a.earned);
+        validAccruals[0].isUsed = true;
+      } else {
+        // Fallback: jika pool terbatas kosong, cari accrual valid FIFO dari mana saja
+        const fallback = accruals.find(acc =>
+          !acc.isUsed &&
+          acc.earned <= massDay &&
+          acc.expiry > massDay
+        );
+        if (fallback) fallback.isUsed = true;
+      }
+    });
+  }
 
   // ── LANGKAH 4: BUAT DAFTAR HARI CUTI REGULER (dari form yang disetujui) ─
   // Expand setiap baris approved leave menjadi hari-hari individual
@@ -723,14 +801,26 @@ function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, m
 /**
  * getMasterCutiData — Data master cuti semua karyawan dengan kuota FIFO.
  * Digunakan untuk tampilan admin.
+ * Mendukung kolom extended "WFA Lebaran" untuk melewati potongan Cuti Bersama.
  */
 function getMasterCutiData() {
   var ss = SpreadsheetApp.openByUrl(SHEET_URL);
   var karSheet = ss.getSheetByName(KARYAWAN_SHEET_NAME);
   var cutiSheet = ss.getSheetByName(CUTI_SHEET_NAME);
 
-  var karData = karSheet.getRange(1, 1, karSheet.getLastRow(), Math.max(karSheet.getLastColumn(), 11)).getDisplayValues();
+  var lastCol = Math.max(karSheet.getLastColumn(), 12);
+  var karData = karSheet.getRange(1, 1, karSheet.getLastRow(), lastCol).getDisplayValues();
   var cutiData = cutiSheet ? cutiSheet.getDataRange().getDisplayValues() : [];
+
+  // Cari index kolom "WFA Lebaran" dari header baris pertama
+  var wfaColIndex = -1;
+  var headers = karData[0] || [];
+  for (var h = 11; h < headers.length; h++) {
+    if (headers[h] && headers[h].toString().trim() === 'WFA Lebaran') {
+      wfaColIndex = h;
+      break;
+    }
+  }
 
   // Bangun map: namaKaryawan (lowercase) → array approved leaves
   var leavesMap = {};
@@ -752,7 +842,12 @@ function getMasterCutiData() {
     var tanggalMasuk = karData[ki][8] || '';
     var staticQuotaVal = karData[ki][10] || 0;
     var approvedLeaves = leavesMap[empNamaLower] || [];
-    var usableQuota = calculateUsableQuota(tanggalMasuk, approvedLeaves, staticQuotaVal, massLeaveDates);
+
+    // Tentukan apakah karyawan ini WFA Lebaran
+    var wfaRaw = (wfaColIndex >= 0 && karData[ki][wfaColIndex]) ? karData[ki][wfaColIndex].toString().trim() : '';
+    var isWFALebaran = ['ya', 'yes', 'wfa'].indexOf(wfaRaw.toLowerCase()) >= 0;
+
+    var usableQuota = calculateUsableQuota(tanggalMasuk, approvedLeaves, staticQuotaVal, massLeaveDates, isWFALebaran);
 
     var cutiDiambil = 0;
     for (var cl = 0; cl < approvedLeaves.length; cl++) {
@@ -768,7 +863,8 @@ function getMasterCutiData() {
       tanggalMasuk: tanggalMasuk,
       staticQuota: karData[ki][10] || 0,
       cutiDiambil: cutiDiambil,
-      usableQuota: usableQuota
+      usableQuota: usableQuota,
+      wfaLebaran: wfaRaw
     });
   }
   return result;
@@ -776,6 +872,7 @@ function getMasterCutiData() {
 
 /**
  * getUsableQuotaForUser — Hitung kuota FIFO untuk satu karyawan (dipakai di portal karyawan).
+ * Mendukung kolom extended "WFA Lebaran" untuk melewati potongan Cuti Bersama.
  *
  * @param {string} nama - Nama karyawan
  * @returns {number} Sisa kuota cuti yang bisa dipakai hari ini
@@ -786,16 +883,31 @@ function getUsableQuotaForUser(nama) {
     var karSheet = ss.getSheetByName(KARYAWAN_SHEET_NAME);
     var cutiSheet = ss.getSheetByName(CUTI_SHEET_NAME);
 
-    var karData = karSheet.getRange(1, 1, karSheet.getLastRow(), Math.max(karSheet.getLastColumn(), 11)).getDisplayValues();
+    var lastCol = Math.max(karSheet.getLastColumn(), 12);
+    var karData = karSheet.getRange(1, 1, karSheet.getLastRow(), lastCol).getDisplayValues();
     var targetName = (nama || '').toString().trim().toLowerCase();
     var tanggalMasuk = '';
     var staticQuotaVal = 0;
+    var isWFALebaran = false;
+
+    // Cari index kolom "WFA Lebaran" dari header
+    var headers = karData[0] || [];
+    var wfaColIndex = -1;
+    for (var h = 11; h < headers.length; h++) {
+      if (headers[h] && headers[h].toString().trim() === 'WFA Lebaran') {
+        wfaColIndex = h;
+        break;
+      }
+    }
 
     for (var i = 1; i < karData.length; i++) {
       var dbName = karData[i][2] ? karData[i][2].toString().trim().toLowerCase() : '';
       if (dbName === targetName) {
         tanggalMasuk = karData[i][8] || '';
         staticQuotaVal = karData[i][10] || 0;
+        // Cek status WFA Lebaran
+        var wfaRaw = (wfaColIndex >= 0 && karData[i][wfaColIndex]) ? karData[i][wfaColIndex].toString().trim() : '';
+        isWFALebaran = ['ya', 'yes', 'wfa'].indexOf(wfaRaw.toLowerCase()) >= 0;
         break;
       }
     }
@@ -813,7 +925,7 @@ function getUsableQuotaForUser(nama) {
     }
 
     var massLeaveDates = getMassLeaveDatesFromSS(ss);
-    return calculateUsableQuota(tanggalMasuk, approvedLeaves, staticQuotaVal, massLeaveDates);
+    return calculateUsableQuota(tanggalMasuk, approvedLeaves, staticQuotaVal, massLeaveDates, isWFALebaran);
   } catch (e) { return 0; }
 }
 
@@ -870,10 +982,27 @@ function updateMasterCuti(data) {
   try {
     const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(KARYAWAN_SHEET_NAME);
     const sheetData = sheet.getDataRange().getDisplayValues();
+
+    // Find index for WFA Lebaran
+    const headers = sheetData[0];
+    let wfaColIndex = -1;
+    for (let h = 11; h < headers.length; h++) {
+      if (headers[h] && headers[h].toString().trim() === 'WFA Lebaran') {
+        wfaColIndex = h;
+        break;
+      }
+    }
+
     for (let i = 1; i < sheetData.length; i++) {
       if (sheetData[i][0].toString() === data.id.toString()) {
         sheet.getRange(i + 1, 9).setValue(data.tanggalMasuk || "");
-        sheet.getRange(i + 1, 11).setValue(data.sisaCuti); // Kolom 11 (1-indexed) = index 10
+        sheet.getRange(i + 1, 11).setValue(data.sisaCuti);
+
+        // Update WFA Lebaran if column found and data provided
+        if (wfaColIndex >= 0 && data.wfaLebaran !== undefined) {
+          sheet.getRange(i + 1, wfaColIndex + 1).setValue(data.wfaLebaran);
+        }
+
         return { success: true, message: 'Data Master Cuti diupdate.' };
       }
     }
@@ -1150,7 +1279,7 @@ function simpanPengumuman(j, t, i, w, fileData) {
     if (fileData && fileData.base64Data) {
       const folder = DriveApp.getFolderById(MEMO_FOLDER_ID);
       const blob = Utilities.newBlob(Utilities.base64Decode(fileData.base64Data.split(',')[1]), fileData.mimeType || 'application/pdf', fileData.fileName);
-      fileUrl = folder.createFile(blob).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW).getUrl();
+      fileUrl = folder.createFile(blob).getUrl();
     }
     SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman').appendRow([j, t, i, w, fileUrl]);
     return { success: true };
