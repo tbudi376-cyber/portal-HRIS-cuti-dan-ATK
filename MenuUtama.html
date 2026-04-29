@@ -849,6 +849,22 @@
 
     <script>
         let currentUser = null; let atkListLoaded = false; let currentUploadRow = null;
+        let liburNasionalDates = [];
+        let liburDataReady = false;
+
+        function initLiburNasional() {
+            google.script.run
+                .withSuccessHandler(function (dates) {
+                    liburNasionalDates = dates || [];
+                    liburDataReady = true;
+                    console.log('[HRIS] ✅ Libur loaded di MenuUtama:', liburNasionalDates.length, 'tanggal');
+                })
+                .withFailureHandler(function () {
+                    liburDataReady = true;
+                    console.warn('[HRIS] ⚠️ Gagal load libur di MenuUtama');
+                })
+                .getLiburNasionalDates();
+        }
 
         function formatTglAman(tglString) {
             if (!tglString) return '-';
@@ -857,6 +873,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            initLiburNasional(); // Load daftar libur nasional untuk hitungan durasi cuti
             const userDataString = localStorage.getItem('userHRIS');
             if (!userDataString) { window.location.href = "<?= getScriptUrl() ?>?page=login"; return; }
             currentUser = JSON.parse(userDataString);
@@ -1286,14 +1303,41 @@
         }
 
         window.hitungLamaCuti = function () {
-            const t1 = document.getElementById('cuti-tgl-mulai').value; const t2 = document.getElementById('cuti-tgl-selesai').value; const inputLama = document.getElementById('cuti-lama');
-            if (t1 && t2) {
-                let d1 = new Date(t1); let d2 = new Date(t2);
-                if (d2 < d1) { inputLama.value = ''; alert('Tanggal Selesai harus setelah Tanggal Mulai!'); document.getElementById('cuti-tgl-selesai').value = ''; return; }
-                let count = 0; let cur = new Date(d1);
-                while (cur <= d2) { let day = cur.getDay(); if (day !== 0 && day !== 6) { count++; } cur.setDate(cur.getDate() + 1); }
-                inputLama.value = count;
+            const t1 = document.getElementById('cuti-tgl-mulai').value;
+            const t2 = document.getElementById('cuti-tgl-selesai').value;
+            const inputLama = document.getElementById('cuti-lama');
+
+            if (!t1 || !t2) return;
+
+            // FIX TIMEZONE: pakai T00:00:00 agar diparsing sebagai local time, bukan UTC
+            let d1 = new Date(t1 + 'T00:00:00');
+            let d2 = new Date(t2 + 'T00:00:00');
+
+            if (d2 < d1) {
+                inputLama.value = '';
+                alert('Tanggal Selesai harus setelah Tanggal Mulai!');
+                document.getElementById('cuti-tgl-selesai').value = '';
+                return;
             }
+
+            let count = 0;
+            let cur = new Date(d1);
+            while (cur <= d2) {
+                const day = cur.getDay();
+                const yyyy = cur.getFullYear();
+                const mm = String(cur.getMonth() + 1).padStart(2, '0');
+                const dd = String(cur.getDate()).padStart(2, '0');
+                const dateStr = `${yyyy}-${mm}-${dd}`;
+
+                const isWeekend = day === 0 || day === 6;
+                const isHoliday = liburNasionalDates.includes(dateStr);
+
+                if (!isWeekend && !isHoliday) count++;
+                cur.setDate(cur.getDate() + 1);
+            }
+
+            inputLama.value = count;
+            console.log('[HRIS] Durasi dihitung:', count, 'hari kerja');
         }
 
         window.toggleKeteranganMenu = function () {

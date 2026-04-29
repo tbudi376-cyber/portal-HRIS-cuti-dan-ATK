@@ -299,6 +299,52 @@ function simpanDataCuti(dataForm) {
   } catch (error) { return { status: 'error', message: error.toString() }; }
 }
 
+function getLiburNasionalDates() {
+  try {
+    const ss = SpreadsheetApp.openByUrl(SHEET_URL);
+    const sheet = ss.getSheetByName('Libur Nasional');
+    if (!sheet) return [];
+
+    // FIX TIMEZONE: ambil timezone dari spreadsheet, bukan dari project settings
+    // Ini mencegah date shift saat Apps Script project timezone ≠ Asia/Jakarta
+    const tz = ss.getSpreadsheetTimeZone();
+
+    const data = sheet.getDataRange().getValues();
+    const liburDates = [];
+
+    for (let i = 1; i < data.length; i++) {
+      // Struktur sheet: Col A=Tanggal, Col B=Nama Hari, Col C=Kategori ("Libur Nasional"/"Cuti Bersama"), Col D=Status
+      const colC = data[i][2] ? data[i][2].toString().trim().toLowerCase() : '';
+
+      // Ambil Libur Nasional DAN Cuti Bersama (keduanya tidak dihitung sebagai hari kerja)
+      if (colC === 'libur nasional' || colC === 'cuti bersama') {
+        let d = data[i][0];
+        let dateObj;
+
+        if (d instanceof Date) {
+          dateObj = d;
+        } else {
+          dateObj = parseIndoDate(d);
+        }
+
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          // FIX: Utilities.formatDate() selalu pakai timezone spreadsheet
+          // Mencegah date shift: "2026-05-01 WIB" → UTC midnight = "2026-04-30" (salah!)
+          const dateStr = Utilities.formatDate(dateObj, tz, 'yyyy-MM-dd');
+          liburDates.push(dateStr);
+          Logger.log('[HRIS] Libur ditambahkan: ' + dateStr + ' (' + data[i][1] + ')');
+        }
+      }
+    }
+
+    Logger.log('[HRIS] Total libur dikirim ke frontend: ' + liburDates.length);
+    return liburDates;
+  } catch (e) {
+    Logger.log('[HRIS] ERROR getLiburNasionalDates: ' + e.message);
+    return [];
+  }
+}
+
 function submitRequest(formData) {
   try {
     const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(REQUEST_LOG_SHEET_NAME);
@@ -310,15 +356,15 @@ function submitRequest(formData) {
     const keterangan = formData.keterangan || '';
     formData.requestedItems.forEach(item => {
       sheet.appendRow([
-        requestId, 
-        timestamp, 
-        formData.employeeName, 
-        formData.employeeEmail, 
-        formData.department, 
-        item.name, 
-        item.quantity, 
-        'Menunggu Persetujuan', 
-        '', 
+        requestId,
+        timestamp,
+        formData.employeeName,
+        formData.employeeEmail,
+        formData.department,
+        item.name,
+        item.quantity,
+        'Menunggu Persetujuan',
+        '',
         formData.keterangan || ''
       ]);
     });
@@ -379,25 +425,25 @@ function getUserNotifications(user) {
   if (!user) return { cuti: [], atk: [], pengumuman: [] };
   const cuti = getUserCuti(user.nama);
   const atk = getUserRequests(user.email);
-  
+
   let pengumuman = [];
   try {
     const sheetP = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Pengumuman');
     if (sheetP) {
       const dP = sheetP.getDataRange().getDisplayValues();
       for (let i = 1; i < dP.length; i++) {
-         if (dP[i][0]) {
-            pengumuman.push({
-              judul: dP[i][0],
-              timestamp: dP[i][1],
-              isi: dP[i][2],
-              warna: dP[i][3],
-              lampiran: dP[i][4] || null
-            });
-         }
+        if (dP[i][0]) {
+          pengumuman.push({
+            judul: dP[i][0],
+            timestamp: dP[i][1],
+            isi: dP[i][2],
+            warna: dP[i][3],
+            lampiran: dP[i][4] || null
+          });
+        }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return { cuti: cuti, atk: atk, pengumuman: pengumuman };
 }
@@ -719,11 +765,11 @@ function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, m
       const validAccruals = accruals.filter(acc => {
         if (acc.isUsed || acc.expiry <= massDay) return false;
 
-        const earnedYear  = acc.earned.getFullYear();
+        const earnedYear = acc.earned.getFullYear();
         const earnedMonth = acc.earned.getMonth();
 
         // Nov & Dec of targetYear (Oct & Nov work completions)
-        const isNovDec      = (earnedYear === targetYear && (earnedMonth === 10 || earnedMonth === 11));
+        const isNovDec = (earnedYear === targetYear && (earnedMonth === 10 || earnedMonth === 11));
         // Jan of targetYear+1 (Dec work completion)
         const isJanNextYear = (earnedYear === targetYear + 1 && earnedMonth === 0);
 
@@ -1374,4 +1420,4 @@ function getEmployeePtMap() {
     }
     return map;
   } catch (e) { return {}; }
-}
+} function testDebug() { var sheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1BuY4yZ_CPzcJoUh6l1fEfMuQVQtCskctzppnBC_PDlU/').getSheetByName('Data Karyawan'); sheet.getRange(1, 20).setValue(JSON.stringify(getLiburNasionalDates())); }
