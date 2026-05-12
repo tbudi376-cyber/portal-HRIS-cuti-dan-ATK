@@ -61,6 +61,50 @@ function checkAndCreateSheets() {
     let sh = ss.insertSheet('Libur Nasional');
     sh.appendRow(['Tanggal', 'Nama Libur', 'Keterangan', 'Status']);
   }
+  if (!ss.getSheetByName('Mapping_Atasan')) {
+    let sh = ss.insertSheet('Mapping_Atasan');
+    sh.appendRow(['Email Atasan', 'Daftar Email Bawahan (JSON)']);
+  }
+}
+
+function getPeraturanHtml() {
+  return HtmlService.createHtmlOutputFromFile('Peraturan').getContent();
+}
+
+function simpanMappingBawahan(data) {
+  try {
+    // Verifikasi role admin
+    const callerInfo = getRoleInfoByEmail(data.adminEmail);
+    if (!callerInfo || callerInfo.peran.toLowerCase() !== 'admin') {
+      return { success: false, message: 'Akses Ditolak: Anda bukan Admin.' };
+    }
+
+    const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Mapping_Atasan');
+    const existingData = sheet.getDataRange().getValues();
+    const emailAtasan = data.emailAtasan.trim().toLowerCase();
+    
+    // Cari apakah Atasan sudah ada di sheet
+    let rowIndex = -1;
+    for (let i = 1; i < existingData.length; i++) {
+      if (existingData[i][0] && existingData[i][0].toString().trim().toLowerCase() === emailAtasan) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    const bawahanJson = JSON.stringify(data.daftarBawahan);
+
+    if (rowIndex > -1) {
+      // Update baris existing
+      sheet.getRange(rowIndex, 2).setValue(bawahanJson);
+    } else {
+      // Buat baris baru
+      sheet.appendRow([emailAtasan, bawahanJson]);
+    }
+    return { success: true, message: 'Mapping bawahan berhasil disimpan.' };
+  } catch (e) {
+    return { success: false, message: 'Gagal menyimpan mapping: ' + e.message };
+  }
 }
 
 function safeDateString(val) {
@@ -316,8 +360,8 @@ function getLiburNasionalDates() {
       // Struktur sheet: Col A=Tanggal, Col B=Nama Hari, Col C=Kategori ("Libur Nasional"/"Cuti Bersama"), Col D=Status
       const colC = data[i][2] ? data[i][2].toString().trim().toLowerCase() : '';
 
-      // Ambil Libur Nasional DAN Cuti Bersama (keduanya tidak dihitung sebagai hari kerja)
-      if (colC === 'libur nasional' || colC === 'cuti bersama') {
+      // Hanya Libur Nasional yang tidak dihitung sebagai hari kerja (Cuti Bersama tetap dihitung)
+      if (colC === 'libur nasional') {
         let d = data[i][0];
         let dateObj;
 
@@ -480,20 +524,50 @@ function getRoleInfoByEmail(email) {
   return null;
 }
 
+function getBawahanEmails(emailAtasan) {
+  if (!emailAtasan) return [];
+  try {
+    const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName('Mapping_Atasan');
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    const target = emailAtasan.toString().trim().toLowerCase();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toString().trim().toLowerCase() === target) {
+        if (data[i][1]) {
+          return JSON.parse(data[i][1]);
+        }
+      }
+    }
+  } catch(e) {}
+  return [];
+}
+
 function getAllCuti(callerEmail) {
   const callerInfo = callerEmail ? getRoleInfoByEmail(callerEmail) : null;
-  const isAtasan = callerInfo && callerInfo.peran.toLowerCase() === 'atasan';
-  const rolePt = isAtasan ? callerInfo.ptName : null;
-  const roleDivisi = isAtasan ? callerInfo.divisi : null;
+  const isAtasan = callerInfo && callerInfo.peran ? callerInfo.peran.toString().toLowerCase() === 'atasan' : false;
+  const bawahanEmailsRaw = isAtasan ? getBawahanEmails(callerEmail) : [];
+  const bawahanEmails = bawahanEmailsRaw.map(e => e.toString().trim().toLowerCase());
+  
   const ss = SpreadsheetApp.openByUrl(SHEET_URL);
   const data = ss.getSheetByName(CUTI_SHEET_NAME).getDataRange().getDisplayValues();
   const ptMap = getEmployeePtMap();
+  
+  // Ambil data Karyawan sekali untuk mapping nama ke email (karena di sheet Cuti hanya ada Nama)
+  const kSheet = ss.getSheetByName(KARYAWAN_SHEET_NAME).getDataRange().getDisplayValues();
+  const nameToEmailMap = {};
+  for(let i=1; i<kSheet.length; i++){
+     if(kSheet[i][2]) nameToEmailMap[kSheet[i][2].toString().trim().toLowerCase()] = kSheet[i][3] ? kSheet[i][3].toString().trim().toLowerCase() : "";
+  }
+
   const requests = [];
   for (let i = data.length - 1; i > 0; i--) {
     const nama = data[i][1];
-    const empDivisi = data[i][3] ? data[i][3].toString().trim() : "";
+    const empEmail = nameToEmailMap[nama.toString().trim().toLowerCase()] || "";
+    
+    // Filter Atasan: hanya tampilkan data jika email pemohon ada di daftar bawahanEmails
+    if (isAtasan && !bawahanEmails.includes(empEmail)) continue;
+    
     const empPtName = ptMap[nama.toString().trim().toLowerCase()] || "-";
-    if (isAtasan && (empPtName !== rolePt || empDivisi !== roleDivisi)) continue;
     requests.push({
       rowNum: i + 1,
       timestamp: data[i][0],
@@ -510,6 +584,11 @@ function getAllCuti(callerEmail) {
       ptName: empPtName
     });
   }
+  
+  if (isAtasan) {
+    Logger.log(`[getAllCuti] Atasan: ${callerEmail}, Bawahan count: ${bawahanEmails.length}, Requests found: ${requests.length}`);
+  }
+  
   return requests;
 }
 
@@ -559,17 +638,19 @@ function processCutiApproval(rowNum, isApproved, reason, namaKaryawan, lamaCuti,
 
 function getKaryawanData(callerEmail) {
   const callerInfo = callerEmail ? getRoleInfoByEmail(callerEmail) : null;
-  const isAtasan = callerInfo && callerInfo.peran.toLowerCase() === 'atasan';
-  const rolePt = isAtasan ? callerInfo.ptName : null;
-  const roleDivisi = isAtasan ? callerInfo.divisi : null;
+  const isAtasan = callerInfo && callerInfo.peran ? callerInfo.peran.toString().toLowerCase() === 'atasan' : false;
+  const bawahanEmailsRaw = isAtasan ? getBawahanEmails(callerEmail) : [];
+  const bawahanEmails = bawahanEmailsRaw.map(e => e.toString().trim().toLowerCase());
+  
   const sheet = SpreadsheetApp.openByUrl(SHEET_URL).getSheetByName(KARYAWAN_SHEET_NAME);
   const data = sheet.getDataRange().getDisplayValues();
   const headers = data[0];
   const karyawan = [];
   for (let i = 1; i < data.length; i++) {
     const empPtName = data[i][1] ? data[i][1].toString().trim() : "-";
-    const empDivisi = data[i][6] ? data[i][6].toString().trim() : "";
-    if (isAtasan && (empPtName !== rolePt || empDivisi !== roleDivisi)) continue;
+    const empEmail = data[i][3] ? data[i][3].toString().trim().toLowerCase() : "";
+    
+    if (isAtasan && !bawahanEmails.includes(empEmail)) continue;
     let extendedData = [];
     for (let j = 11; j < headers.length; j++) {
       if (headers[j]) {
@@ -849,10 +930,19 @@ function calculateUsableQuota(tanggalMasukStr, approvedLeaves, statisQuotaRaw, m
  * Digunakan untuk tampilan admin.
  * Mendukung kolom extended "WFA Lebaran" untuk melewati potongan Cuti Bersama.
  */
-function getMasterCutiData() {
+function getMasterCutiData(callerEmail) {
   var ss = SpreadsheetApp.openByUrl(SHEET_URL);
   var karSheet = ss.getSheetByName(KARYAWAN_SHEET_NAME);
   var cutiSheet = ss.getSheetByName(CUTI_SHEET_NAME);
+
+  // Atasan filtering
+  var callerInfo = callerEmail ? getRoleInfoByEmail(callerEmail) : null;
+  var isAtasan = callerInfo && callerInfo.peran ? callerInfo.peran.toString().toLowerCase() === 'atasan' : false;
+  var bawahanEmails = [];
+  if (isAtasan) {
+    var rawEmails = getBawahanEmails(callerEmail);
+    bawahanEmails = rawEmails.map(function(e) { return e.toString().trim().toLowerCase(); });
+  }
 
   var lastCol = Math.max(karSheet.getLastColumn(), 12);
   var karData = karSheet.getRange(1, 1, karSheet.getLastRow(), lastCol).getDisplayValues();
@@ -885,6 +975,11 @@ function getMasterCutiData() {
   for (var ki = 1; ki < karData.length; ki++) {
     var empNama = karData[ki][2] ? karData[ki][2].toString().trim() : '';
     var empNamaLower = empNama.toLowerCase();
+    var empEmail = karData[ki][3] ? karData[ki][3].toString().trim().toLowerCase() : '';
+    
+    // Atasan filter: only show bawahan
+    if (isAtasan && !bawahanEmails.includes(empEmail)) continue;
+    
     var tanggalMasuk = karData[ki][8] || '';
     var staticQuotaVal = karData[ki][10] || 0;
     var approvedLeaves = leavesMap[empNamaLower] || [];

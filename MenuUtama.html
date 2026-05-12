@@ -237,6 +237,12 @@
                                     class="ph ph-clock-counter-clockwise text-xl"></i></span><span
                                 class="ml-3 text-sm font-medium tracking-wide truncate">Riwayat & Status</span></button>
                     </li>
+                    <li><button onclick="switchTab('peraturan')" id="menu-peraturan"
+                            class="w-full relative flex flex-row items-center h-11 focus:outline-none menu-inactive pr-6"><span
+                                class="inline-flex justify-center items-center ml-4"><i
+                                    class="ph ph-book-open-text text-xl"></i></span><span
+                                class="ml-3 text-sm font-medium tracking-wide truncate">Peraturan & Ketentuan</span></button>
+                    </li>
                 </ul>
             </div>
             <div class="border-t border-indigo-700 p-4 bg-indigo-900/30">
@@ -812,6 +818,13 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- 5. TAB PERATURAN -->
+                <div id="content-peraturan" class="hidden fade-in max-w-4xl mx-auto">
+                    <div class="flex justify-center items-center h-full py-20">
+                        <div class="spinner border-indigo-600"></div>
+                    </div>
+                </div>
 
             </main>
         </div>
@@ -1262,7 +1275,8 @@
             }).getHomeData();
         }
 
-        const TABS = ['home', 'dashboard', 'cuti', 'atk', 'riwayat', 'profil'];
+        const TABS = ['home', 'dashboard', 'cuti', 'atk', 'riwayat', 'profil', 'peraturan'];
+        let peraturanLoaded = false;
         window.switchTab = function (tabId) {
             // Auto close sidebar on mobile if open
             const sidebar = document.getElementById('sidebar-user');
@@ -1280,13 +1294,16 @@
 
                 TABS.forEach(t => {
                     if (t !== 'home') {
-                        document.getElementById(`content-${t}`).classList.add('hidden');
+                        const contentEl = document.getElementById(`content-${t}`);
+                        if(contentEl) contentEl.classList.add('hidden');
                         const menu = document.getElementById(`menu-${t}`);
                         if (menu) { menu.classList.remove('menu-active'); menu.classList.add('menu-inactive'); }
                     }
                 });
 
-                document.getElementById(`content-${tabId}`).classList.remove('hidden');
+                const targetContent = document.getElementById(`content-${tabId}`);
+                if(targetContent) targetContent.classList.remove('hidden');
+                
                 const activeMenu = document.getElementById(`menu-${tabId}`);
                 if (activeMenu) { activeMenu.classList.remove('menu-inactive'); activeMenu.classList.add('menu-active'); }
 
@@ -1296,9 +1313,19 @@
                 else if (tabId === 'atk') { headerTitle.textContent = "Permintaan Barang Logistik"; }
                 else if (tabId === 'riwayat') { headerTitle.textContent = "Riwayat & Status"; }
                 else if (tabId === 'profil') { headerTitle.textContent = "Profil Saya"; }
+                else if (tabId === 'peraturan') { headerTitle.textContent = "Peraturan & Ketentuan"; }
 
                 if (tabId === 'atk' && !atkListLoaded) { loadAtkItemsList(); atkListLoaded = true; }
                 if (tabId === 'riwayat') { loadUserRiwayatCuti(); loadUserRiwayatAtk(); }
+                
+                if (tabId === 'peraturan' && !peraturanLoaded) {
+                    google.script.run.withSuccessHandler(html => {
+                        targetContent.innerHTML = html;
+                        peraturanLoaded = true;
+                    }).withFailureHandler(err => {
+                        targetContent.innerHTML = `<div class="p-8 text-center text-red-500">Gagal memuat halaman: ${err.message}</div>`;
+                    }).getPeraturanHtml();
+                }
             }
         }
 
@@ -1721,7 +1748,7 @@
                     </table>
                     
                 </div>
-                <script>
+                ${'<'}script>
                     window.onload = function() {
                         var statusVal = '${data.status || ''}';
                         if (statusVal === 'Disetujui') {

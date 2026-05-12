@@ -150,6 +150,11 @@
                                 class="inline-flex justify-center items-center ml-3"><i
                                     class="ph ph-calculator text-xl"></i></span><span
                                 class="ml-3 text-sm tracking-wide truncate">Master Cuti</span></button></li>
+                    <li id="sidebar-item-mapping"><button id="menu-mapping"
+                            class="w-full rounded-lg relative flex flex-row items-center h-12 focus:outline-none menu-inactive transition-all"><span
+                                class="inline-flex justify-center items-center ml-3"><i
+                                    class="ph ph-users-three text-xl"></i></span><span
+                                class="ml-3 text-sm tracking-wide truncate">Mapping Bawahan</span></button></li>
 
                     <li class="px-4 pb-2 pt-6" id="sidebar-group-logistik-label">
                         <div class="text-[10px] font-bold tracking-widest text-indigo-300/80 uppercase">Modul Logistik
@@ -725,6 +730,53 @@
                     </div>
                 </div>
 
+                <!-- TAB MAPPING BAWAHAN -->
+                <div id="content-mapping" class="hidden fade-in max-w-5xl mx-auto">
+                    <div class="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-slate-100 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-64 h-64 bg-indigo-50/50 rounded-bl-full -z-0"></div>
+                        <h3 class="text-2xl font-black text-slate-800 mb-2 relative z-10 flex items-center">
+                            <i class="ph-fill ph-users-three text-indigo-500 mr-3 text-3xl"></i> Mapping Atasan - Bawahan
+                        </h3>
+                        <p class="text-sm text-slate-500 mb-8 relative z-10">Pilih Atasan dan tentukan siapa saja bawahan yang berhak mengakses menu persetujuan di bawahnya.</p>
+                        
+                        <div class="relative z-10 space-y-6">
+                            <!-- Select Atasan -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Nama Atasan</label>
+                                <select id="map-atasan" class="input-custom w-full max-w-md bg-white">
+                                    <option value="">Pilih Atasan...</option>
+                                    <!-- Options populated via JS -->
+                                </select>
+                            </div>
+
+                            <!-- Multi-select Bawahan -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Daftar Bawahan</label>
+                                <div class="flex gap-2 mb-2">
+                                    <select id="map-bawahan-select" class="input-custom flex-1 max-w-md bg-white">
+                                        <option value="">Tambah Bawahan...</option>
+                                        <!-- Options populated via JS -->
+                                    </select>
+                                    <button onclick="addBawahan()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors whitespace-nowrap">
+                                        <i class="ph-bold ph-plus"></i> Tambah
+                                    </button>
+                                </div>
+                                <div id="map-bawahan-list" class="flex flex-wrap gap-2 mt-4 min-h-[50px] p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                    <p class="text-xs text-slate-400 italic w-full text-center py-2" id="map-bawahan-empty">Belum ada bawahan yang dipilih.</p>
+                                </div>
+                            </div>
+
+                            <div id="map-alert" class="hidden p-4 rounded-xl text-sm font-bold mt-4"></div>
+
+                            <div class="pt-6 border-t border-slate-100 flex justify-end">
+                                <button id="btn-simpan-mapping" onclick="submitMapping()" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5 flex items-center">
+                                    <i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Mapping
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
@@ -1059,9 +1111,14 @@
                 hideSidebarItem('sidebar-item-master-cuti');
             }
 
-            // Master Cuti: only visible to admin and hrd
-            if (effectiveRole !== 'admin' && effectiveRole !== 'hrd') {
+            // Master Cuti: visible to admin, hrd, and atasan
+            if (effectiveRole !== 'admin' && effectiveRole !== 'hrd' && effectiveRole !== 'atasan') {
                 hideSidebarItem('sidebar-item-master-cuti');
+            }
+            
+            // Mapping Bawahan: only visible to admin
+            if (effectiveRole !== 'admin') {
+                hideSidebarItem('sidebar-item-mapping');
             }
             // effectiveRole === 'admin' -> show everything (no hiding needed)
 
@@ -1073,8 +1130,8 @@
 
             document.getElementById('sync-year').value = new Date().getFullYear();
 
-            const tabs = ['cuti', 'karyawan', 'master-cuti', 'requests', 'stock', 'proofs', 'dashboard', 'info'];
-            const titles = { cuti: "Data Cuti", karyawan: "Database Karyawan", 'master-cuti': "Master Kuota Cuti", requests: "Persetujuan ATK", stock: "Manajemen Data Stok", proofs: "Riwayat Pengambilan", dashboard: "Dasbor Analitik & Laporan", info: "Pengumuman & Kalender Pintar" };
+            const tabs = ['cuti', 'karyawan', 'master-cuti', 'mapping', 'requests', 'stock', 'proofs', 'dashboard', 'info'];
+            const titles = { cuti: "Data Cuti", karyawan: "Database Karyawan", 'master-cuti': "Master Kuota Cuti", mapping: "Mapping Atasan & Bawahan", requests: "Persetujuan ATK", stock: "Manajemen Data Stok", proofs: "Riwayat Pengambilan", dashboard: "Dasbor Analitik & Laporan", info: "Pengumuman & Kalender Pintar" };
 
             tabs.forEach(key => {
                 const btn = document.getElementById(`menu-${key}`);
@@ -1091,6 +1148,7 @@
                         if (key === 'cuti') loadCutiRequests();
                         if (key === 'karyawan') loadKaryawan();
                         if (key === 'master-cuti') loadMasterCuti();
+                        if (key === 'mapping') initMappingTab();
                         if (key === 'requests') loadAtkRequests();
                         if (key === 'stock') loadItemsForStockForm();
                         if (key === 'proofs') loadProofRecords();
@@ -1167,7 +1225,7 @@
                     if (st === 'Ditolak') sc = 'st-tolak';
                     html += `<tr><td>${i + 1}</td><td><b>${r.nama}</b></td><td>${r.ptName || '-'}</td><td>${r.divisi}</td><td>${r.jenis}</td><td>${new Date(r.tglMulai).toLocaleDateString('id-ID')} - ${new Date(r.tglSelesai).toLocaleDateString('id-ID')}</td><td>${r.lama} Hari</td><td class="st-badge ${sc}"><b>${st}</b></td></tr>`;
                 });
-                html += `</tbody></table><script>window.onload=function(){setTimeout(function(){window.print();window.close();},500);}<\/script></body></html>`;
+                html += `</tbody></table>${'<'}script>window.onload=function(){setTimeout(function(){window.print();window.close();},500);}<\/script></body></html>`;
                 printWindow.document.write(html);
                 printWindow.document.close();
             }
@@ -1557,7 +1615,7 @@
                     });
                 }).withFailureHandler(err => {
                     document.getElementById('master-cuti-tbody').innerHTML = `<tr><td colspan="6" class="text-center text-sm text-red-500 py-6">Gagal memuat: ${err.message}</td></tr>`;
-                }).getMasterCutiData();
+                }).getMasterCutiData(currentUser.email);
             }
             window.filterMasterCuti = function () {
                 const q = document.getElementById('mc-search').value.toLowerCase();
@@ -1605,6 +1663,135 @@
                     }
                 }).updateMasterCuti(data);
             });
+
+            // MAPPING BAWAHAN
+            let mapKaryawanData = [];
+            let currentBawahanList = [];
+
+            window.initMappingTab = function() {
+                const atasanSelect = document.getElementById('map-atasan');
+                const bawahanSelect = document.getElementById('map-bawahan-select');
+                
+                atasanSelect.innerHTML = '<option value="">Memuat data...</option>';
+                bawahanSelect.innerHTML = '<option value="">Memuat data...</option>';
+                
+                google.script.run.withSuccessHandler(data => {
+                    mapKaryawanData = data;
+                    
+                    let atasanOptions = '<option value="">Pilih Atasan...</option>';
+                    let bawahanOptions = '<option value="">Tambah Bawahan...</option>';
+                    
+                    // Filter untuk Atasan select (hanya yg role Atasan/Admin dll jika perlu, atau semua bisa jadi atasan)
+                    // Disini kita tampilkan semua agar fleksibel, tapi diutamakan yang perannya "Atasan"
+                    data.forEach(kar => {
+                        const opt = `<option value="${kar.email}">${kar.nama} (${kar.email})</option>`;
+                        if(kar.peran.toLowerCase() === 'atasan') {
+                            atasanOptions += opt;
+                        }
+                        bawahanOptions += opt; // semua bisa jadi bawahan
+                    });
+                    
+                    atasanSelect.innerHTML = atasanOptions;
+                    bawahanSelect.innerHTML = bawahanOptions;
+                    
+                    // Event listener saat atasan dipilih
+                    atasanSelect.addEventListener('change', function() {
+                        const emailAtasan = this.value;
+                        if(!emailAtasan) {
+                            currentBawahanList = [];
+                            updateBawahanListUI();
+                            return;
+                        }
+                        
+                        // Fetch existing mapping dari server
+                        document.getElementById('map-alert').classList.add('hidden');
+                        document.getElementById('map-bawahan-list').innerHTML = '<p class="text-xs text-slate-400 italic w-full text-center py-2">Memuat mapping...</p>';
+                        
+                        google.script.run.withSuccessHandler(bawahanEmails => {
+                            currentBawahanList = bawahanEmails || [];
+                            updateBawahanListUI();
+                        }).getBawahanEmails(emailAtasan); // Kita bisa pakai fungsi getBawahanEmails yg baru kita buat
+                    });
+                }).getKaryawanData();
+            };
+
+            window.addBawahan = function() {
+                const select = document.getElementById('map-bawahan-select');
+                const email = select.value;
+                if(!email) return;
+                
+                if(currentBawahanList.includes(email)) {
+                    showAlertMapping('Bawahan ini sudah ada di daftar.', false);
+                    return;
+                }
+                
+                currentBawahanList.push(email);
+                updateBawahanListUI();
+                select.value = ''; // Reset select
+            };
+
+            window.removeBawahan = function(email) {
+                currentBawahanList = currentBawahanList.filter(e => e !== email);
+                updateBawahanListUI();
+            };
+
+            window.updateBawahanListUI = function() {
+                const listContainer = document.getElementById('map-bawahan-list');
+                listContainer.innerHTML = '';
+                
+                if(currentBawahanList.length === 0) {
+                    listContainer.innerHTML = '<p class="text-xs text-slate-400 italic w-full text-center py-2" id="map-bawahan-empty">Belum ada bawahan yang dipilih.</p>';
+                    return;
+                }
+                
+                currentBawahanList.forEach(email => {
+                    const kar = mapKaryawanData.find(k => k.email === email);
+                    const namaDisplay = kar ? kar.nama : email;
+                    
+                    listContainer.innerHTML += `
+                        <div class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center shadow-sm text-sm">
+                            <span class="font-bold text-slate-700 mr-2">${namaDisplay}</span>
+                            <button onclick="removeBawahan('${email}')" class="text-rose-500 hover:text-rose-700 focus:outline-none">
+                                <i class="ph-bold ph-x"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            };
+
+            window.showAlertMapping = function(msg, isSuccess) {
+                const alertEl = document.getElementById('map-alert');
+                alertEl.textContent = msg;
+                alertEl.className = isSuccess 
+                    ? 'p-4 rounded-xl text-sm font-bold mt-4 bg-emerald-100 text-emerald-800 border border-emerald-200 block'
+                    : 'p-4 rounded-xl text-sm font-bold mt-4 bg-rose-100 text-rose-800 border border-rose-200 block';
+                alertEl.classList.remove('hidden');
+                setTimeout(() => { alertEl.classList.add('hidden'); }, 4000);
+            };
+
+            window.submitMapping = function() {
+                const atasanEmail = document.getElementById('map-atasan').value;
+                if(!atasanEmail) {
+                    showAlertMapping('Pilih Atasan terlebih dahulu.', false);
+                    return;
+                }
+                
+                const btn = document.getElementById('btn-simpan-mapping');
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner !w-5 !h-5 mr-2"></div> Menyimpan...';
+                
+                const payload = {
+                    adminEmail: currentUser.email,
+                    emailAtasan: atasanEmail,
+                    daftarBawahan: currentBawahanList
+                };
+                
+                google.script.run.withSuccessHandler(res => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Mapping';
+                    showAlertMapping(res.message, res.success);
+                }).simpanMappingBawahan(payload);
+            };
 
             // LOGISTIK
             window.loadAtkRequests = function () {

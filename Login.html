@@ -74,15 +74,8 @@
             btn.classList.replace('bg-indigo-600', 'bg-green-600');
             btn.innerHTML = 'Berhasil! Mengalihkan...';
             
-            // Arahkan ke halaman berdasarkan peran (4-tier admin roles ke panel admin, sisanya portal karyawan)
-            const adminRoles = ['admin', 'hrd', 'user', 'atasan', 'ga', 'general affair'];
-            const peranLower = (response.userData.peran || '').toString().trim().toLowerCase();
             setTimeout(() => {
-              if(adminRoles.includes(peranLower)) {
-                window.top.location.href = "<?= getScriptUrl() ?>?page=admin";
-              } else {
-                window.top.location.href = "<?= getScriptUrl() ?>?page=menu";
-              }
+              window.top.location.href = "<?= getScriptUrl() ?>?page=menu";
             }, 1000);
 
           } else {

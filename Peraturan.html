@@ -1,0 +1,115 @@
+<!-- 
+  File: Peraturan.html 
+  Berisi konten Peraturan dan Ketentuan untuk Portal HRIS.
+-->
+<div class="max-w-4xl mx-auto space-y-8 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-br from-indigo-900 to-indigo-700 rounded-3xl p-8 sm:p-10 shadow-xl text-white relative overflow-hidden">
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div class="relative z-10 flex items-center">
+            <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mr-6 backdrop-blur-sm border border-white/30">
+                <i class="ph-fill ph-book-open-text text-4xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-black mb-2 drop-shadow-md">Peraturan & Ketentuan</h1>
+                <p class="text-indigo-100 font-medium">Standard Operating Procedure (SOP) & Kebijakan Perusahaan</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content 1: Kebijakan Cuti FIFO -->
+    <div class="bg-white rounded-3xl p-8 sm:p-10 shadow-lg border border-slate-100 relative overflow-hidden group">
+        <div class="absolute left-0 top-0 w-2 h-full bg-emerald-500"></div>
+        
+        <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+            <i class="ph-fill ph-calendar-check text-emerald-500 mr-3 text-3xl"></i> 
+            1. Kebijakan Pengajuan Cuti (Sistem FIFO)
+        </h2>
+        
+        <div class="prose prose-slate max-w-none text-slate-600">
+            <p class="text-lg mb-4">Sistem cuti tahunan perusahaan menggunakan metode <strong>First In, First Out (FIFO)</strong>. Artinya, sisa kuota cuti tahun sebelumnya (jika ada yang diperpanjang) akan selalu digunakan terlebih dahulu sebelum memotong kuota cuti tahun berjalan.</p>
+            
+            <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-xl mb-6">
+                <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2">Poin Penting:</h3>
+                <ul class="list-disc pl-5 space-y-2 text-emerald-900 text-sm">
+                    <li>Kuota cuti diberikan secara prorata atau penuh tergantung masa kerja.</li>
+                    <li>Sistem otomatis menghitung durasi cuti dengan <strong>mengecualikan</strong> hari Sabtu, Minggu, dan Libur Nasional.</li>
+                    <li>Pengajuan cuti wajib disetujui oleh Atasan Langsung sebelum statusnya berubah menjadi "Disetujui".</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Simulasi Perhitungan Potongan Cuti</h3>
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm mb-6">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Kasus</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Durasi Pengajuan</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Terdapat Hari Libur?</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Total Hari Terpotong</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Senin - Rabu</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">3 Hari</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"><span class="text-rose-500 font-semibold"><i class="ph-bold ph-x"></i> Tidak</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">3 Hari</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition bg-slate-50/50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Jumat - Senin</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">4 Hari (kalender)</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"><span class="text-emerald-500 font-semibold"><i class="ph-bold ph-check"></i> Ya (Sabtu & Minggu)</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">2 Hari</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">Senin - Rabu (Rabu Libur Nas.)</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">3 Hari (kalender)</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"><span class="text-emerald-500 font-semibold"><i class="ph-bold ph-check"></i> Ya (Libur Nasional)</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">2 Hari</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Content 2: Ketentuan Pengadaan Logistik -->
+    <div class="bg-white rounded-3xl p-8 sm:p-10 shadow-lg border border-slate-100 relative overflow-hidden group mb-10">
+        <div class="absolute left-0 top-0 w-2 h-full bg-blue-500"></div>
+        
+        <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+            <i class="ph-fill ph-package text-blue-500 mr-3 text-3xl"></i> 
+            2. Ketentuan Permintaan Barang (ATK/P3K)
+        </h2>
+        
+        <div class="prose prose-slate max-w-none text-slate-600">
+            <p class="text-lg mb-4">Pengadaan barang operasional kantor harus dilakukan melalui Modul Logistik di portal ini guna kemudahan *tracking* stok dan pelaporan.</p>
+            
+            <ul class="space-y-4 mt-6">
+                <li class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mt-0.5 mr-4">1</div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-base">Pilih Barang dari Master Stok</h4>
+                        <p class="text-sm text-slate-500 mt-1">Hanya barang yang terdaftar di Master Stok yang dapat diajukan. Hubungi Admin GA jika barang tidak tersedia.</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mt-0.5 mr-4">2</div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-base">Proses Approval GA</h4>
+                        <p class="text-sm text-slate-500 mt-1">General Affair akan memeriksa ketersediaan stok fisik sebelum menyetujui pengajuan Anda.</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mt-0.5 mr-4">3</div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-base">Pengambilan Barang</h4>
+                        <p class="text-sm text-slate-500 mt-1">Barang yang sudah berstatus <strong>"Disetujui"</strong> dapat diambil di ruang pantry/gudang logistik dengan menunjukkan bukti persetujuan (atau langsung koordinasi dengan pihak GA).</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
