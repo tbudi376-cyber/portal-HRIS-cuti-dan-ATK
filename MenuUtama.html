@@ -1535,22 +1535,111 @@
         window.loadUserRiwayatCuti = function () {
             if (!currentUser) return;
             const tbody = document.getElementById('table-riwayat-cuti');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6"><div class="spinner border-indigo-600"></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6"><div class="spinner border-indigo-600"></div></td></tr>';
+
+            // Ambil URL portal untuk template WA
+            google.script.run
+                .withSuccessHandler(function(portalUrl) {
+                    const hrisUrl = portalUrl || '';
+
+                    // Langkah 1: Ambil info atasan
+                    google.script.run
+                        .withSuccessHandler(function(atasanInfo) {
+                            renderRiwayatCuti(tbody, atasanInfo, hrisUrl);
+                        })
+                        .withFailureHandler(function() {
+                            renderRiwayatCuti(tbody, null, hrisUrl);
+                        })
+                        .getAtasanInfoByBawahanEmail(currentUser.email);
+                })
+                .withFailureHandler(function() {
+                    // Fallback tanpa URL
+                    google.script.run
+                        .withSuccessHandler(function(atasanInfo) {
+                            renderRiwayatCuti(tbody, atasanInfo, '');
+                        })
+                        .withFailureHandler(function() {
+                            renderRiwayatCuti(tbody, null, '');
+                        })
+                        .getAtasanInfoByBawahanEmail(currentUser.email);
+                })
+                .getScriptUrl();
+        }
+
+        function renderRiwayatCuti(tbody, atasanInfo, hrisUrl) {
             google.script.run.withSuccessHandler(data => {
                 tbody.innerHTML = '';
-                if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-sm text-gray-500">Belum ada pengajuan cuti.</td></tr>'; return; }
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-sm text-gray-500">Belum ada pengajuan cuti.</td></tr>';
+                    return;
+                }
                 data.forEach(c => {
                     let st = c.status || 'Menunggu Persetujuan';
-                    let sc = st.includes('Disetujui') ? 'text-green-700 bg-green-100' : (st.includes('Ditolak') ? 'text-red-700 bg-red-100' : 'text-amber-700 bg-amber-100');
+                    let sc = 'text-amber-700 bg-amber-100';
+                    if (st.includes('Disetujui')) sc = 'text-green-700 bg-green-100';
+                    else if (st.includes('Ditolak')) sc = 'text-red-700 bg-red-100';
+                    else if (st.includes('Dibatalkan')) sc = 'text-gray-600 bg-gray-100';
+
                     let displayMulai = formatTglAman(c.tglMulai);
                     let displaySelesai = formatTglAman(c.tglSelesai);
                     const encodedData = encodeURIComponent(JSON.stringify(c));
 
-                    let actionBtn = `<button onclick="cetakFormCuti('${encodedData}', '${currentUser.id}')" class="bg-slate-800 hover:bg-slate-700 text-white p-1.5 rounded flex items-center justify-center transition" title="Cetak Form HRD-007"><i class="ph-bold ph-printer text-lg"></i></button>`;
+                    let printBtn = `<button onclick="cetakFormCuti('${encodedData}', '${currentUser.id}')" class="bg-slate-800 hover:bg-slate-700 text-white p-1.5 rounded flex items-center justify-center transition" title="Cetak Form HRD-007"><i class="ph-bold ph-printer text-lg"></i></button>`;
 
-                    tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="py-3 px-4 font-bold text-sm text-gray-800 whitespace-nowrap">${c.jenis}</td><td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${displayMulai} - ${displaySelesai}</td><td class="py-3 px-4 text-sm font-bold text-indigo-600">${c.lama} Hari</td><td class="py-3 px-4 text-center"><span class="px-2.5 py-1 text-xs font-bold rounded-full ${sc}">${st.split(':')[0]}</span></td><td class="py-3 px-4 flex justify-center">${actionBtn}</td></tr>`;
+                    // Tombol WA: muncul untuk status Menunggu, jika nomor atasan ada
+                    let waBtn = '';
+                    const isPending = st.includes('Menunggu');
+                    if (isPending && atasanInfo && atasanInfo.waNumber) {
+                        const namaAtasan = atasanInfo.namaAtasan || 'Atasan';
+                        const periode = `${displayMulai} s/d ${displaySelesai}`;
+                        let pesanText = `Halo Bapak/Ibu ${namaAtasan}, saya ${c.nama} baru saja mengajukan cuti melalui Portal HRIS untuk tanggal ${periode} (${c.lama} hari). Mohon kesediaannya untuk meninjau dan memberikan persetujuan melalui tautan berikut: ${hrisUrl}\nTerima kasih.`;
+                        const pesanWa = encodeURIComponent(pesanText);
+                        waBtn = `<a href="https://wa.me/${atasanInfo.waNumber}?text=${pesanWa}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded flex items-center justify-center transition" title="Follow Up via WhatsApp"><i class="ph-bold ph-whatsapp-logo text-lg"></i></a>`;
+                    }
+
+                    // Tombol Batalkan: HANYA muncul untuk status "Menunggu Persetujuan"
+                    // Pembatalan cuti yang sudah disetujui hanya bisa dilakukan oleh Admin/Atasan di Dasbor
+                    let cancelBtn = '';
+                    if (isPending && c.rowNum) {
+                        cancelBtn = `<button onclick="batalkanCutiHandler(${c.rowNum}, '${(c.nama || '').replace(/'/g, "\\'")}')" class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded flex items-center justify-center transition" title="Batalkan Pengajuan"><i class="ph-bold ph-x-circle text-lg"></i></button>`;
+                    }
+
+                    tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="py-3 px-4 font-bold text-sm text-gray-800 whitespace-nowrap">${c.jenis}</td><td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${displayMulai} - ${displaySelesai}</td><td class="py-3 px-4 text-sm font-bold text-indigo-600">${c.lama} Hari</td><td class="py-3 px-4 text-center"><span class="px-2.5 py-1 text-xs font-bold rounded-full ${sc}">${st.split(':')[0]}</span></td><td class="py-3 px-4"><div class="flex justify-center gap-1.5">${printBtn}${waBtn}${cancelBtn}</div></td></tr>`;
                 });
-            }).withFailureHandler(err => { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-sm text-red-500 py-6">Gagal memuat: ${err.message}</td></tr>`; }).getUserCuti(currentUser.nama);
+            }).withFailureHandler(err => {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-sm text-red-500 py-6">Gagal memuat: ${err.message}</td></tr>`;
+            }).getUserCuti(currentUser.nama);
+        }
+
+        // Handler pembatalan cuti karyawan (hanya untuk status Menunggu)
+        window.batalkanCutiHandler = function(rowNum, nama) {
+            Swal.fire({
+                title: 'Konfirmasi Pembatalan',
+                text: 'Apakah Anda yakin ingin membatalkan pengajuan cuti ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Tidak'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Memproses...', text: 'Sedang membatalkan pengajuan cuti...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            if (res.success) {
+                                Swal.fire({ icon: 'success', title: 'Berhasil!', text: res.message, timer: 2500, showConfirmButton: false });
+                                loadUserRiwayatCuti();
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            Swal.fire({ icon: 'error', title: 'Error Sistem', text: err.message || 'Terjadi kesalahan.' });
+                        })
+                        .batalkanCuti(rowNum, nama, currentUser.email);
+                }
+            });
         }
 
         // FUNGSI GENERATOR CETAK FORM HRD-007 (PRESISI TINGKAT TINGGI)

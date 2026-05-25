@@ -291,6 +291,70 @@ function sendCutiEmail(toEmail, nama, status, jenisCuti, tglMulai, tglSelesai, a
  * 2. Hitung total hari dari semua pengajuan "Menunggu Persetujuan" yang belum diproses.
  * 3. Tolak jika (lama_cuti_baru + total_pending) > kuota_tersedia.
  */
+/**
+ * getAtasanInfoByBawahanEmail — Cari nama dan nomor HP atasan dari email bawahan.
+ * Menggunakan sheet Mapping_Atasan untuk menemukan atasan, lalu lookup di Data Karyawan.
+ * Nomor HP diformat ke standar internasional (62xxx) untuk link wa.me.
+ * @returns {Object|null} { namaAtasan, noHpAtasan, waNumber } atau null jika tidak ditemukan.
+ */
+function getAtasanInfoByBawahanEmail(emailBawahan) {
+  if (!emailBawahan) return null;
+  try {
+    const ss = SpreadsheetApp.openByUrl(SHEET_URL);
+    const mappingSheet = ss.getSheetByName('Mapping_Atasan');
+    if (!mappingSheet) return null;
+
+    const mappingData = mappingSheet.getDataRange().getValues();
+    const emailTarget = emailBawahan.toString().trim().toLowerCase();
+    let emailAtasan = null;
+
+    // Cari email atasan yang memiliki bawahan ini
+    for (let i = 1; i < mappingData.length; i++) {
+      if (!mappingData[i][1]) continue;
+      try {
+        const bawahanList = JSON.parse(mappingData[i][1]);
+        if (Array.isArray(bawahanList)) {
+          const found = bawahanList.some(e => e.toString().trim().toLowerCase() === emailTarget);
+          if (found) {
+            emailAtasan = mappingData[i][0] ? mappingData[i][0].toString().trim().toLowerCase() : null;
+            break;
+          }
+        }
+      } catch (e) { continue; }
+    }
+
+    if (!emailAtasan) return null;
+
+    // Lookup nama dan nomor HP dari sheet Data Karyawan
+    const karSheet = ss.getSheetByName(KARYAWAN_SHEET_NAME);
+    if (!karSheet) return null;
+    const karData = karSheet.getDataRange().getDisplayValues();
+    for (let i = 1; i < karData.length; i++) {
+      const dbEmail = karData[i][3] ? karData[i][3].toString().trim().toLowerCase() : '';
+      if (dbEmail === emailAtasan) {
+        const namaAtasan = karData[i][2] ? karData[i][2].toString().trim() : '';
+        let noHpRaw = '';
+        // Kolom T = index 19 = "No Handphone" di sheet Data Karyawan
+        if (karData[i][19]) noHpRaw = karData[i][19].toString().trim();
+        // Format ke standar WA internasional: 62xxx
+        // Nomor di sheet sudah tanpa angka 0 di depan (misal: 81234567890)
+        let waNumber = '';
+        if (noHpRaw) {
+          waNumber = noHpRaw.replace(/[\s\-\+\.]/g, ''); // hapus spasi, strip, plus, titik
+          if (waNumber.startsWith('62')) { /* sudah benar */ }
+          else if (waNumber.startsWith('0')) waNumber = '62' + waNumber.substring(1);
+          else waNumber = '62' + waNumber; // tidak diawali 0, langsung tambah 62
+        }
+        return { namaAtasan, noHpAtasan: noHpRaw, waNumber };
+      }
+    }
+    return null;
+  } catch (e) {
+    Logger.log('[HRIS] getAtasanInfoByBawahanEmail error: ' + e.message);
+    return null;
+  }
+}
+
 function simpanDataCuti(dataForm) {
   try {
     const ss = SpreadsheetApp.openByUrl(SHEET_URL);
@@ -339,7 +403,16 @@ function simpanDataCuti(dataForm) {
       });
     } catch (e) { }
 
-    return { status: 'success', message: 'Pengajuan cuti berhasil dikirim!' };
+    // 6. Ambil info atasan untuk tombol follow-up WA
+    const atasanInfo = dataForm.emailPengirim
+      ? getAtasanInfoByBawahanEmail(dataForm.emailPengirim)
+      : null;
+
+    return {
+      status: 'success',
+      message: 'Pengajuan cuti berhasil dikirim!',
+      atasanInfo: atasanInfo  // { namaAtasan, noHpAtasan, waNumber } atau null
+    };
   } catch (error) { return { status: 'error', message: error.toString() }; }
 }
 
@@ -452,6 +525,7 @@ function getUserCuti(nama) {
       if (sheetName === target) {
         let st = data[i][12] ? data[i][12].toString() : 'Menunggu Persetujuan';
         requests.push({
+          rowNum: i + 1, // 1-indexed sheet row number untuk aksi pembatalan
           timestamp: data[i][0], nama: data[i][1], jabatan: data[i][2],
           divisi: data[i][3], penempatan: data[i][4], jenis: data[i][5],
           tglMulai: data[i][6], tglSelesai: data[i][7], lama: data[i][8],
@@ -634,6 +708,83 @@ function processCutiApproval(rowNum, isApproved, reason, namaKaryawan, lamaCuti,
 
     return { success: true, message: 'Status Cuti diupdate.' };
   } catch (e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * batalkanCuti — Membatalkan pengajuan cuti (Menunggu atau Disetujui).
+ * Mengubah status menjadi "Dibatalkan" di sheet Data Cuti.
+ *
+ * KEAMANAN BERLAPIS:
+ * - Status "Menunggu Persetujuan": bisa dibatalkan oleh karyawan pemilik pengajuan.
+ * - Status "Disetujui": HANYA bisa dibatalkan oleh Admin atau Atasan.
+ *   Karyawan biasa yang mencoba via console akan ditolak.
+ *
+ * CATATAN: emailOperator dikirim dari frontend karena Session.getActiveUser().getEmail()
+ * mengembalikan string kosong saat Web App di-deploy dengan "Execute as: Me".
+ *
+ * ARSITEKTUR FIFO: Kuota saldo cuti OTOMATIS ter-restore karena
+ * calculateUsableQuota() hanya menghitung baris berstatus "Disetujui".
+ *
+ * @param {number} rowNum - Nomor baris (1-indexed) di sheet Data_Cuti
+ * @param {string} namaPembatal - Nama yang melakukan pembatalan
+ * @param {string} emailOperator - Email pengguna aktif yang memanggil fungsi ini
+ * @returns {Object} { success, message }
+ */
+function batalkanCuti(rowNum, namaPembatal, emailOperator) {
+  try {
+    const ss = SpreadsheetApp.openByUrl(SHEET_URL);
+    const sheet = ss.getSheetByName(CUTI_SHEET_NAME);
+    if (!sheet) return { success: false, message: 'Sheet Data Cuti tidak ditemukan.' };
+
+    const lastRow = sheet.getLastRow();
+    if (rowNum < 2 || rowNum > lastRow) {
+      return { success: false, message: 'Baris data tidak valid.' };
+    }
+
+    // Ambil data baris cuti
+    const rowData = sheet.getRange(rowNum, 1, 1, 15).getDisplayValues()[0];
+    const currentStatus = rowData[12] ? rowData[12].toString().trim() : '';
+
+    // Validasi: hanya bisa batalkan "Menunggu Persetujuan" atau "Disetujui"
+    if (currentStatus !== 'Menunggu Persetujuan' && currentStatus !== 'Disetujui') {
+      return { success: false, message: `Status saat ini "${currentStatus}" tidak bisa dibatalkan.` };
+    }
+
+    // === SECURITY: Role-based access control ===
+    // Gunakan emailOperator dari frontend (Session.getActiveUser() unreliable di mode "Execute as: Me")
+    const callerEmail = (emailOperator || '').toString().trim().toLowerCase();
+    const callerInfo = callerEmail ? getRoleInfoByEmail(callerEmail) : null;
+    const callerRole = callerInfo && callerInfo.peran ? callerInfo.peran.toString().trim().toLowerCase() : '';
+
+    if (currentStatus === 'Disetujui') {
+      // Pembatalan cuti yang sudah di-approve: HANYA Admin atau Atasan
+      if (callerRole !== 'admin' && callerRole !== 'atasan') {
+        return {
+          success: false,
+          message: 'Akses Ditolak: Pembatalan cuti yang telah disetujui hanya dapat dilakukan oleh Atasan atau Admin.'
+        };
+      }
+    } else {
+      // Status "Menunggu Persetujuan": verifikasi bahwa pembatal = pemilik pengajuan
+      const namaSheet = rowData[1] ? rowData[1].toString().trim().toLowerCase() : '';
+      const namaPemohon = (namaPembatal || '').toString().trim().toLowerCase();
+      // Karyawan hanya boleh membatalkan pengajuannya sendiri (kecuali Admin/Atasan)
+      if (namaSheet !== namaPemohon && callerRole !== 'admin' && callerRole !== 'atasan') {
+        return { success: false, message: 'Anda tidak berhak membatalkan pengajuan ini.' };
+      }
+    }
+
+    // Update status di kolom 13 (1-indexed)
+    sheet.getRange(rowNum, 13).setValue('Dibatalkan');
+
+    // Log info di kolom 15: siapa yang membatalkan + role
+    const roleSuffix = (callerRole === 'admin' || callerRole === 'atasan') ? ` (${callerInfo.peran})` : '';
+    sheet.getRange(rowNum, 15).setValue('Dibatalkan oleh: ' + (namaPembatal || '-') + roleSuffix);
+
+    return { success: true, message: 'Pengajuan cuti berhasil dibatalkan. Kuota cuti karyawan telah dikembalikan.' };
+  } catch (e) {
+    return { success: false, message: 'Gagal membatalkan: ' + e.message };
+  }
 }
 
 function getKaryawanData(callerEmail) {

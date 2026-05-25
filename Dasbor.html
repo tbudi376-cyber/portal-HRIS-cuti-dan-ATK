@@ -267,6 +267,7 @@
                                 <option value="Menunggu">Menunggu</option>
                                 <option value="Disetujui">Disetujui</option>
                                 <option value="Ditolak">Ditolak</option>
+                                <option value="Dibatalkan">Dibatalkan</option>
                             </select></div>
                         <div class="w-full lg:w-auto flex-1 flex gap-3">
                             <button onclick="applyCutiFilter()"
@@ -1163,6 +1164,29 @@
 
             // CUTI
             window.loadCutiRequests = function () { renderLoading('cuti-container'); google.script.run.withSuccessHandler(data => { allCutiData = data; renderCutiList(allCutiData); }).withFailureHandler(err => renderError('cuti-container', err.message)).getAllCuti(currentUser.email); }
+            // Helper: format tanggal aman dari string Google Sheets (DD/MM/YYYY, nama bulan Indo, atau ISO)
+            function safeDateFormat(val) {
+                if (!val) return '-';
+                val = val.toString().trim();
+                // Coba format DD/MM/YYYY
+                let parts = val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+                if (parts) {
+                    return `${parts[1].padStart(2,'0')}/${parts[2].padStart(2,'0')}/${parts[3]}`;
+                }
+                // Coba format YYYY-MM-DD (ISO)
+                parts = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (parts) {
+                    return `${parts[3]}/${parts[2]}/${parts[1]}`;
+                }
+                // Coba parse sebagai Date object (fallback)
+                const d = new Date(val);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                }
+                // Jika semua gagal, kembalikan string asli (lebih baik dari 'Invalid Date')
+                return val;
+            }
+
             function renderCutiList(data) {
                 currentCutiViewData = data;
                 const container = document.getElementById('cuti-container');
@@ -1178,6 +1202,9 @@
                         actionButtons = `<button onclick="approveCuti(${req.rowNum}, '${req.nama}', ${req.lama})" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 hover:text-white transition shadow-sm">Setujui</button><button onclick="rejectModalOpen(${req.rowNum}, 'cuti', '${req.nama}', ${req.lama})" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition shadow-sm">Tolak</button>`;
                     } else if (req.status === 'Disetujui') {
                         statusBadge = `<span class="bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold border border-green-200"><i class="ph-bold ph-check mr-1"></i>Disetujui</span>`;
+                        actionButtons = `<button onclick="batalkanCutiAdmin(${req.rowNum}, '${req.nama}')" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition shadow-sm flex items-center gap-1"><i class="ph-bold ph-x-circle"></i>Batalkan Cuti</button>`;
+                    } else if (req.status && req.status.includes('Dibatalkan')) {
+                        statusBadge = `<span class="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full font-bold border border-gray-200"><i class="ph-bold ph-prohibit mr-1"></i>Dibatalkan</span>`;
                     } else {
                         statusBadge = `<span class="bg-red-100 text-red-700 text-xs px-2.5 py-1 rounded-full font-bold border border-red-200"><i class="ph-bold ph-x mr-1"></i>Ditolak</span>`;
                     }
@@ -1192,7 +1219,7 @@
                                 </div>
                                 <p class="text-sm text-slate-600">
                                     <i class="ph ph-buildings mr-1"></i> ${req.ptName || '-'} / ${req.divisi} &nbsp;|&nbsp; 
-                                    <i class="ph ph-calendar-blank mr-1"></i> Diajukan: ${new Date(req.timestamp).toLocaleDateString('id-ID')}
+                                    <i class="ph ph-calendar-blank mr-1"></i> Diajukan: ${safeDateFormat(req.timestamp)}
                                 </p>
                             </div>
                             <div class="flex gap-2 w-full sm:w-auto" id="action-cuti-${req.rowNum}">
@@ -1203,7 +1230,7 @@
                         <div class="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-blue-100/50 flex justify-between items-center">
                             <div>
                                 <p class="text-sm font-semibold text-blue-700 mb-1 flex items-center"><i class="ph-fill ph-tag mr-2"></i> ${req.jenis}</p>
-                                <p class="text-slate-700 text-sm font-medium">${new Date(req.tglMulai).toLocaleDateString('id-ID')} <span class="text-slate-400 mx-1">s/d</span> ${new Date(req.tglSelesai).toLocaleDateString('id-ID')}</p>
+                                <p class="text-slate-700 text-sm font-medium">${safeDateFormat(req.tglMulai)} <span class="text-slate-400 mx-1">s/d</span> ${safeDateFormat(req.tglSelesai)}</p>
                             </div>
                             <div class="text-right bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-2 rounded-lg border border-blue-200 shadow-sm">
                                 <span class="block text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Durasi</span>
@@ -1213,7 +1240,7 @@
                     </div>`;
                 });
             }
-            window.applyCutiFilter = function () { const nama = document.getElementById('filter-nama').value.toLowerCase(), jenis = document.getElementById('filter-jenis').value, status = document.getElementById('filter-status').value; const filtered = allCutiData.filter(req => { const matchNama = req.nama.toLowerCase().includes(nama), matchJenis = jenis === '' || req.jenis === jenis; let matchStatus = true; if (status === 'Menunggu') matchStatus = req.status && req.status.includes('Menunggu'); else if (status === 'Disetujui') matchStatus = req.status === 'Disetujui'; else if (status === 'Ditolak') matchStatus = req.status && req.status.includes('Ditolak'); return matchNama && matchJenis && matchStatus; }); renderCutiList(filtered); }
+            window.applyCutiFilter = function () { const nama = document.getElementById('filter-nama').value.toLowerCase(), jenis = document.getElementById('filter-jenis').value, status = document.getElementById('filter-status').value; const filtered = allCutiData.filter(req => { const matchNama = req.nama.toLowerCase().includes(nama), matchJenis = jenis === '' || req.jenis === jenis; let matchStatus = true; if (status === 'Menunggu') matchStatus = req.status && req.status.includes('Menunggu'); else if (status === 'Disetujui') matchStatus = req.status === 'Disetujui'; else if (status === 'Ditolak') matchStatus = req.status && req.status.includes('Ditolak'); else if (status === 'Dibatalkan') matchStatus = req.status && req.status.includes('Dibatalkan'); return matchNama && matchJenis && matchStatus; }); renderCutiList(filtered); }
             window.resetCutiFilter = function () { document.getElementById('filter-nama').value = ''; document.getElementById('filter-jenis').value = ''; document.getElementById('filter-status').value = ''; renderCutiList(allCutiData); }
             window.printCutiReport = function () {
                 if (currentCutiViewData.length === 0) { alert("Tidak ada data untuk dicetak!"); return; }
@@ -1223,14 +1250,45 @@
                     let sc = 'st-tunggu', st = r.status.split(':')[0];
                     if (st === 'Disetujui') sc = 'st-setuju';
                     if (st === 'Ditolak') sc = 'st-tolak';
-                    html += `<tr><td>${i + 1}</td><td><b>${r.nama}</b></td><td>${r.ptName || '-'}</td><td>${r.divisi}</td><td>${r.jenis}</td><td>${new Date(r.tglMulai).toLocaleDateString('id-ID')} - ${new Date(r.tglSelesai).toLocaleDateString('id-ID')}</td><td>${r.lama} Hari</td><td class="st-badge ${sc}"><b>${st}</b></td></tr>`;
+                    html += `<tr><td>${i + 1}</td><td><b>${r.nama}</b></td><td>${r.ptName || '-'}</td><td>${r.divisi}</td><td>${r.jenis}</td><td>${safeDateFormat(r.tglMulai)} - ${safeDateFormat(r.tglSelesai)}</td><td>${r.lama} Hari</td><td class="st-badge ${sc}"><b>${st}</b></td></tr>`;
                 });
                 html += `</tbody></table>${'<'}script>window.onload=function(){setTimeout(function(){window.print();window.close();},500);}<\/script></body></html>`;
                 printWindow.document.write(html);
                 printWindow.document.close();
             }
-            window.showInfoCuti = function (encodedData) { const req = JSON.parse(decodeURIComponent(encodedData)); document.getElementById('info-cuti-content').innerHTML = `<table class="w-full text-left"><tr class="border-b border-slate-100"><td class="py-2 text-slate-500 w-1/3">Nama Lengkap</td><td class="py-2 font-bold text-slate-800">${req.nama}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Divisi</td><td class="py-2 font-semibold text-slate-800">${req.divisi}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Jenis Cuti</td><td class="py-2 font-bold text-blue-600">${req.jenis}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Periode</td><td class="py-2 font-semibold text-slate-800">${new Date(req.tglMulai).toLocaleDateString('id-ID')} s/d ${new Date(req.tglSelesai).toLocaleDateString('id-ID')}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Total Durasi</td><td class="py-2 font-bold text-slate-800">${req.lama} Hari</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Status Saat Ini</td><td class="py-2 font-semibold">${req.status}</td></tr><tr><td colspan="2" class="pt-4 pb-1 text-slate-500 font-bold text-xs uppercase tracking-wider">ALAMAT SELAMA CUTI:</td></tr><tr><td colspan="2" class="p-3 bg-slate-50 rounded-lg border border-slate-200 italic text-slate-700">"${req.alasan}"</td></tr></table>`; document.getElementById('info-cuti-modal').classList.remove('hidden'); }
+            window.showInfoCuti = function (encodedData) { const req = JSON.parse(decodeURIComponent(encodedData)); document.getElementById('info-cuti-content').innerHTML = `<table class="w-full text-left"><tr class="border-b border-slate-100"><td class="py-2 text-slate-500 w-1/3">Nama Lengkap</td><td class="py-2 font-bold text-slate-800">${req.nama}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Divisi</td><td class="py-2 font-semibold text-slate-800">${req.divisi}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Jenis Cuti</td><td class="py-2 font-bold text-blue-600">${req.jenis}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Periode</td><td class="py-2 font-semibold text-slate-800">${safeDateFormat(req.tglMulai)} s/d ${safeDateFormat(req.tglSelesai)}</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Total Durasi</td><td class="py-2 font-bold text-slate-800">${req.lama} Hari</td></tr><tr class="border-b border-slate-100"><td class="py-2 text-slate-500">Status Saat Ini</td><td class="py-2 font-semibold">${req.status}</td></tr><tr><td colspan="2" class="pt-4 pb-1 text-slate-500 font-bold text-xs uppercase tracking-wider">ALAMAT SELAMA CUTI:</td></tr><tr><td colspan="2" class="p-3 bg-slate-50 rounded-lg border border-slate-200 italic text-slate-700">"${req.alasan}"</td></tr></table>`; document.getElementById('info-cuti-modal').classList.remove('hidden'); }
             window.approveCuti = function (rowNum, nama, lama) { document.getElementById(`action-cuti-${rowNum}`).innerHTML = '<div class="spinner !w-8 !h-8 border-2 border-blue-200 border-l-blue-600"></div>'; google.script.run.withSuccessHandler(res => { if (res.success) loadCutiRequests(); else alert(res.message); }).processCutiApproval(rowNum, true, '', nama, lama, currentUser.nama); }
+
+            // Handler pembatalan cuti oleh Admin/Atasan (untuk status Disetujui)
+            window.batalkanCutiAdmin = function(rowNum, namaKaryawan) {
+                Swal.fire({
+                    title: 'Pembatalan Cuti Disetujui',
+                    text: 'Apakah Anda yakin ingin membatalkan cuti yang telah disetujui ini? Saldo cuti karyawan akan otomatis dikembalikan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#EF4444',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Ya, Batalkan Cuti',
+                    cancelButtonText: 'Tidak'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Memproses...', text: 'Sedang membatalkan cuti...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        google.script.run
+                            .withSuccessHandler(function(res) {
+                                if (res.success) {
+                                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: res.message, timer: 2500, showConfirmButton: false });
+                                    loadCutiRequests();
+                                } else {
+                                    Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
+                                }
+                            })
+                            .withFailureHandler(function(err) {
+                                Swal.fire({ icon: 'error', title: 'Error Sistem', text: err.message || 'Terjadi kesalahan.' });
+                            })
+                            .batalkanCuti(rowNum, currentUser.nama, currentUser.email);
+                    }
+                });
+            }
 
             // KARYAWAN
             let extendedFieldsRaw = [];
